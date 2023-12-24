@@ -8,7 +8,7 @@ on:
     - cron: "0 0 * * *" # every day
   push:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 jobs:
@@ -28,8 +28,8 @@ jobs:
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
         with:
           upstream_sync_repo: comfyanonymous/ComfyUI
-          upstream_sync_branch: main
-          target_sync_branch: main
+          upstream_sync_branch: master
+          target_sync_branch: master
           target_repo_token: ${{ secrets.GITHUB_TOKEN }} # automatically generated, no need to set
 
           # Set test_mode true to run tests instead of the true action!!
@@ -54,7 +54,7 @@ jobs:
         uses: aormsby/Fork-Sync-With-Upstream-action@v3.4
         with:
           upstream_sync_repo: comfyanonymous/ComfyUI
-          upstream_sync_branch: main  # Change this to the desired branch
+          upstream_sync_branch: master  # Change this to the desired branch
           target_sync_branch: tensorbee   # Change this to the desired branch
           target_repo_token: ${{ secrets.GITHUB_TOKEN }}
           test_mode: false
