@@ -165,6 +165,7 @@ def load_extra_path_config(yaml_path):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level="INFO", format='%(asctime)s %(levelname)s - %(filename)s - %(lineno)s - %(message)s')
     if args.temp_directory:
         temp_dir = os.path.join(os.path.abspath(args.temp_directory), "temp")
         print(f"Setting temp directory to: {temp_dir}")

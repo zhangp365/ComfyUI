@@ -15,6 +15,8 @@ from PIL import Image, ImageOps
 from PIL.PngImagePlugin import PngInfo
 from io import BytesIO
 
+from request_handler import RequestHandler
+
 try:
     import aiohttp
     from aiohttp import web
@@ -65,6 +67,9 @@ def create_cors_middleware(allowed_origin: str):
 
     return cors_middleware
 
+request_handler = RequestHandler()
+
+
 class PromptServer():
     def __init__(self, loop):
         PromptServer.instance = self
@@ -95,6 +100,7 @@ class PromptServer():
         self.on_prompt_handlers = []
 
         @routes.get('/ws')
+        @request_handler.save_sid_and_verify_signature
         async def websocket_handler(request):
             ws = web.WebSocketResponse()
             await ws.prepare(request)
@@ -123,7 +129,7 @@ class PromptServer():
 
         @routes.get("/")
         async def get_root(request):
-            return web.FileResponse(os.path.join(self.web_root, "index.html"))
+            return web.Response(status=404)
 
         @routes.get("/embeddings")
         def get_embeddings(self):
@@ -448,8 +454,9 @@ class PromptServer():
             queue_info['queue_running'] = current_queue[0]
             queue_info['queue_pending'] = current_queue[1]
             return web.json_response(queue_info)
-
+        
         @routes.post("/prompt")
+        @request_handler.save_sid_and_verify_signature
         async def post_prompt(request):
             print("got prompt")
             resp_code = 200
@@ -598,6 +605,7 @@ class PromptServer():
         elif sid in self.sockets:
             await send_socket_catch_exception(self.sockets[sid].send_json, message)
 
+    @request_handler.send_to_dispatch_center
     def send_sync(self, event, data, sid=None):
         self.loop.call_soon_threadsafe(
             self.messages.put_nowait, (event, data, sid))
