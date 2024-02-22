@@ -36,6 +36,7 @@ output_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "ou
 temp_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "temp")
 input_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "input")
 user_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "user")
+face_directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "face_data")
 
 filename_list_cache = {}
 
@@ -44,6 +45,12 @@ if not os.path.exists(input_directory):
         os.makedirs(input_directory)
     except:
         print("Failed to create input directory")
+
+if not os.path.exists(face_directory):
+    try:
+        os.makedirs(face_directory)
+    except:
+        print("Failed to create face data directory")
 
 def set_output_directory(output_dir):
     global output_directory
