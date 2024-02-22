@@ -1,6 +1,5 @@
 import os
 import time
-
 supported_pt_extensions = set(['.ckpt', '.pt', '.bin', '.pth', '.safetensors'])
 
 folder_names_and_paths = {}
@@ -222,6 +221,13 @@ def get_filename_list(folder_name):
         filename_list_cache[folder_name] = out
     return list(out[0])
 
+import re
+
+pattern = re.compile(r'^[0-9a-fA-F]{32}$')
+
+def is_valid_uuid(s):    
+    return bool(pattern.match(s.replace("-", "")))
+
 def get_save_image_path(filename_prefix, output_dir, image_width=0, image_height=0):
     def map_filename(filename):
         prefix_len = len(os.path.basename(filename_prefix))
@@ -251,12 +257,14 @@ def get_save_image_path(filename_prefix, output_dir, image_width=0, image_height
               "\n         commonpath: " + os.path.commonpath((output_dir, os.path.abspath(full_output_folder))) 
         print(err)
         raise Exception(err)
-
-    try:
-        counter = max(filter(lambda a: a[1][:-1] == filename and a[1][-1] == "_", map(map_filename, os.listdir(full_output_folder))))[0] + 1
-    except ValueError:
+    if is_valid_uuid(filename_prefix.split("_")[0]):
         counter = 1
-    except FileNotFoundError:
-        os.makedirs(full_output_folder, exist_ok=True)
-        counter = 1
+    else:
+        try:
+            counter = max(filter(lambda a: a[1][:-1] == filename and a[1][-1] == "_", map(map_filename, os.listdir(full_output_folder))))[0] + 1
+        except ValueError:
+            counter = 1
+        except FileNotFoundError:
+            os.makedirs(full_output_folder, exist_ok=True)
+            counter = 1
     return full_output_folder, filename, counter, subfolder, filename_prefix
