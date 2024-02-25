@@ -33,6 +33,8 @@ import importlib
 
 import folder_paths
 import latent_preview
+import logging
+logger = logging.getLogger(__file__)
 
 def before_node_execution():
     comfy.model_management.throw_exception_if_processing_interrupted()
@@ -1479,6 +1481,7 @@ class LoadImage:
     RETURN_TYPES = ("IMAGE", "MASK")
     FUNCTION = "load_image"
     def load_image(self, image):
+        logger.debug("start load image")
         image_path = folder_paths.get_annotated_filepath(image)
         img = Image.open(image_path)
         output_images = []
@@ -1497,14 +1500,13 @@ class LoadImage:
                 mask = torch.zeros((64,64), dtype=torch.float32, device="cpu")
             output_images.append(image)
             output_masks.append(mask.unsqueeze(0))
-
         if len(output_images) > 1:
             output_image = torch.cat(output_images, dim=0)
             output_mask = torch.cat(output_masks, dim=0)
         else:
             output_image = output_images[0]
             output_mask = output_masks[0]
-
+        logger.debug("return load image")
         return (output_image, output_mask)
 
     @classmethod

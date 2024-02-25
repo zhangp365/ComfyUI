@@ -5,6 +5,8 @@ import os
 import importlib.util
 import folder_paths
 import time
+import logging
+logger = logging.getLogger(__file__)
 
 def execute_prestartup_script():
     def execute_script(script_path):
@@ -187,6 +189,7 @@ def load_extra_path_config(yaml_path):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format='%(asctime)s.%(msecs)03d - %(filename)s:%(lineno)d - %(levelname)s - %(message)s')
     if args.temp_directory:
         temp_dir = os.path.join(os.path.abspath(args.temp_directory), "temp")
         print(f"Setting temp directory to: {temp_dir}")
