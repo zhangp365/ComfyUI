@@ -21,3 +21,4 @@ my*
 *.log
 start.bat
 /face_data
+.vscode

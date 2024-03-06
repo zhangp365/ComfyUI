@@ -14,6 +14,8 @@ import struct
 from PIL import Image, ImageOps
 from PIL.PngImagePlugin import PngInfo
 from io import BytesIO
+import logging
+logger = logging.getLogger("__file__")
 
 try:
     import aiohttp
@@ -453,7 +455,7 @@ class PromptServer():
 
         @routes.post("/prompt")
         async def post_prompt(request):
-            print("got prompt")
+            logger.info("got prompt")
             resp_code = 200
             out_string = ""
             json_data =  await request.json()

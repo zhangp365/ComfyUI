@@ -1426,6 +1426,8 @@ class SaveImage:
     CATEGORY = "image"
 
     def save_images(self, images, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None):
+        
+        logger.debug("save_images start:")
         filename_prefix += self.prefix_append
         full_output_folder, filename, counter, subfolder, filename_prefix = folder_paths.get_save_image_path(filename_prefix, self.output_dir, images[0].shape[1], images[0].shape[0])
         results = list()
@@ -1450,7 +1452,7 @@ class SaveImage:
                 "type": self.type
             })
             counter += 1
-
+        logger.debug("save_images end:")
         return { "ui": { "images": results } }
 
 class PreviewImage(SaveImage):

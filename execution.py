@@ -11,6 +11,7 @@ import torch
 import nodes
 
 import comfy.model_management
+logger = logging.getLogger(__file__)
 
 def get_input_data(inputs, class_def, unique_id, outputs={}, prompt={}, extra_data={}):
     valid_inputs = class_def.INPUT_TYPES()
@@ -269,6 +270,7 @@ def recursive_output_delete_if_changed(prompt, old_prompt, outputs, current_item
         del d
     return to_delete
 
+
 class PromptExecutor:
     def __init__(self, server):
         self.server = server
@@ -330,7 +332,7 @@ class PromptExecutor:
 
     def execute(self, prompt, prompt_id, extra_data={}, execute_outputs=[]):
         nodes.interrupt_processing(False)
-
+        logger.debug("PromptExecutor start")
         if "client_id" in extra_data:
             self.server.client_id = extra_data["client_id"]
         else:
@@ -389,6 +391,7 @@ class PromptExecutor:
                 # This call shouldn't raise anything if there's an error deep in
                 # the actual SD code, instead it will report the node where the
                 # error was raised
+                logger.debug("recursive_execute start")
                 self.success, error, ex = recursive_execute(self.server, prompt, self.outputs, output_node_id, extra_data, executed, prompt_id, self.outputs_ui, self.object_storage)
                 if self.success is not True:
                     self.handle_execution_error(prompt_id, prompt, current_outputs, executed, error, ex)
