@@ -1,5 +1,7 @@
+import config_logging
 import comfy.options
 comfy.options.enable_args_parsing()
+
 
 import os
 import importlib.util
@@ -7,31 +9,6 @@ import folder_paths
 import time
 import logging
 logger = logging.getLogger(__file__)
-import sys
-import logging.config
-import yaml
-
-def setup_logging(config_path):
-    if(not os.path.exists("logs")):
-        os.mkdir("logs")
-    # from logging.handlers import TimedRotatingFileHandler
-    with open(config_path, 'r') as f:
-        config = yaml.safe_load(f.read())
-        logging.config.dictConfig(config)
-
-class LoggerWriter:
-    def __init__(self, level):
-        self.level = level
-
-    def write(self, message):
-        if message != '\n':
-            self.level(message.strip())
-
-    def flush(self):
-        pass
-
-sys.stdout = LoggerWriter(logging.info)
-sys.stderr = LoggerWriter(logging.warning)
 
 def execute_prestartup_script():
     def execute_script(script_path):
@@ -216,8 +193,7 @@ def load_extra_path_config(yaml_path):
                 folder_paths.add_model_folder_path(x, full_path)
 
 
-if __name__ == "__main__":
-    setup_logging('logging_config.yaml')
+if __name__ == "__main__":    
     if args.temp_directory:
         temp_dir = os.path.join(os.path.abspath(args.temp_directory), "temp")
         print(f"Setting temp directory to: {temp_dir}")
