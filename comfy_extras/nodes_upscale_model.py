@@ -4,7 +4,8 @@ from comfy import model_management
 import torch
 import comfy.utils
 import folder_paths
-
+import logging
+logger = logging.getLogger(__file__)
 class UpscaleModelLoader:
     @classmethod
     def INPUT_TYPES(s):
@@ -36,18 +37,21 @@ class ImageUpscaleWithModel:
     CATEGORY = "image/upscaling"
 
     def upscale(self, upscale_model, image):
+        logger.debug("start upscale")
         device = model_management.get_torch_device()
         upscale_model.to(device)
+        logger.debug("after model to device")
         in_img = image.movedim(-1,-3).to(device)
         free_memory = model_management.get_free_memory(device)
-
-        tile = 512
+        logger.debug("after model_management.get_free_memory")
+        tile = 1200
         overlap = 32
 
         oom = True
         while oom:
             try:
                 steps = in_img.shape[0] * comfy.utils.get_tiled_scale_steps(in_img.shape[3], in_img.shape[2], tile_x=tile, tile_y=tile, overlap=overlap)
+                logger.info(f"upscale: after get_tiled_scale_steps:{steps}")
                 pbar = comfy.utils.ProgressBar(steps)
                 s = comfy.utils.tiled_scale(in_img, lambda a: upscale_model(a), tile_x=tile, tile_y=tile, overlap=overlap, upscale_amount=upscale_model.scale, pbar=pbar)
                 oom = False
@@ -55,9 +59,11 @@ class ImageUpscaleWithModel:
                 tile //= 2
                 if tile < 128:
                     raise e
-
+        logger.debug("before upscale_model.cpu()")
         upscale_model.cpu()
+        logger.debug("after upscale_model.cpu()")
         s = torch.clamp(s.movedim(-3,-1), min=0, max=1.0)
+        logger.info("upscale finish start saving image.")
         return (s,)
 
 NODE_CLASS_MAPPINGS = {
