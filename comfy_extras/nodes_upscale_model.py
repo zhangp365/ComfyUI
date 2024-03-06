@@ -56,6 +56,7 @@ class ImageUpscaleWithModel:
                 s = comfy.utils.tiled_scale(in_img, lambda a: upscale_model(a), tile_x=tile, tile_y=tile, overlap=overlap, upscale_amount=upscale_model.scale, pbar=pbar)
                 oom = False
             except model_management.OOM_EXCEPTION as e:
+                logger.exception(e)
                 tile //= 2
                 if tile < 128:
                     raise e

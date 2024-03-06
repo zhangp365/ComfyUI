@@ -5,6 +5,8 @@ import comfy.checkpoint_pickle
 import safetensors.torch
 import numpy as np
 from PIL import Image
+import logging
+logger = logging.getLogger(__file__)
 
 def load_torch_file(ckpt, safe_load=False, device=None):
     if device is None:
@@ -435,8 +437,9 @@ def tiled_scale(samples, function, tile_x=64, tile_y=64, overlap = 8, upscale_am
                 x = max(0, min(s.shape[-1] - overlap, x))
                 y = max(0, min(s.shape[-2] - overlap, y))
                 s_in = s[:,:,y:y+tile_y,x:x+tile_x]
-
+                logger.debug(f"before upscale model reference. x:{x},y:{y}")
                 ps = function(s_in).to(output_device)
+                logger.debug("after upscale model reference.")
                 mask = torch.ones_like(ps)
                 feather = round(overlap * upscale_amount)
                 for t in range(feather):

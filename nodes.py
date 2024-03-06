@@ -12,6 +12,7 @@ import random
 from PIL import Image, ImageOps, ImageSequence
 from PIL.PngImagePlugin import PngInfo
 import numpy as np
+import cv2
 import safetensors.torch
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.realpath(__file__)), "comfy"))
@@ -1433,7 +1434,7 @@ class SaveImage:
         results = list()
         for (batch_number, image) in enumerate(images):
             i = 255. * image.cpu().numpy()
-            img = Image.fromarray(np.clip(i, 0, 255).astype(np.uint8))
+            numpy_image = np.clip(i, 0, 255).astype(np.uint8)
             metadata = None
             if not args.disable_metadata:
                 metadata = PngInfo()
@@ -1445,7 +1446,11 @@ class SaveImage:
 
             filename_with_batch_num = filename.replace("%batch_num%", str(batch_number))
             file = f"{filename_with_batch_num}_{counter:05}_.png"
-            img.save(os.path.join(full_output_folder, file), pnginfo=metadata, compress_level=self.compress_level)
+            if len(numpy_image.shape) == 2:
+                opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_GRAY2BGR)
+            else:
+                opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR)
+            cv2.imwrite(os.path.join(full_output_folder, file), opencv_image)
             results.append({
                 "filename": file,
                 "subfolder": subfolder,
