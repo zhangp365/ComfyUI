@@ -1415,7 +1415,8 @@ class SaveImage:
     def INPUT_TYPES(s):
         return {"required": 
                     {"images": ("IMAGE", ),
-                     "filename_prefix": ("STRING", {"default": "ComfyUI"})},
+                     "filename_prefix": ("STRING", {"default": "ComfyUI"}),
+                      "filename_suffix": (["jpg","png"], {"default": "jpg"})},
                 "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
                 }
 
@@ -1426,7 +1427,7 @@ class SaveImage:
 
     CATEGORY = "image"
 
-    def save_images(self, images, filename_prefix="ComfyUI", prompt=None, extra_pnginfo=None):
+    def save_images(self, images, filename_prefix="ComfyUI", filename_suffix= "jpg",prompt=None, extra_pnginfo=None):
         
         logger.debug("save_images start:")
         filename_prefix += self.prefix_append
@@ -1445,13 +1446,18 @@ class SaveImage:
                         metadata.add_text(x, json.dumps(extra_pnginfo[x]))
 
             filename_with_batch_num = filename.replace("%batch_num%", str(batch_number))
-            file = f"{filename_with_batch_num}_{counter:05}_.jpg"
-            if len(numpy_image.shape) == 2:
-                opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_GRAY2BGR)
+            if filename_suffix == "jpg":           
+                if len(numpy_image.shape) == 2:
+                    opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_GRAY2BGR)
+                else:
+                    opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR)
+                file = f"{filename_with_batch_num}_{counter:05}_.jpg"
+                compression_params = [int(cv2.IMWRITE_JPEG_QUALITY), 98]
+                cv2.imwrite(os.path.join(full_output_folder, file), opencv_image, compression_params)
             else:
-                opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2BGR)
-            compression_params = [int(cv2.IMWRITE_JPEG_QUALITY), 95]
-            cv2.imwrite(os.path.join(full_output_folder, file), opencv_image, compression_params)
+                file = f"{filename_with_batch_num}_{counter:05}_.png"
+                img = Image.fromarray(numpy_image)
+                img.save(os.path.join(full_output_folder, file), pnginfo=metadata, compress_level=self.compress_level)
             results.append({
                 "filename": file,
                 "subfolder": subfolder,

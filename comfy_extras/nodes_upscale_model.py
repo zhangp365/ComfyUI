@@ -30,13 +30,14 @@ class ImageUpscaleWithModel:
     def INPUT_TYPES(s):
         return {"required": { "upscale_model": ("UPSCALE_MODEL",),
                               "image": ("IMAGE",),
+                              "tile_size": ("INT", {"default": 512, "min": 128, "max": 10000}),
                               }}
     RETURN_TYPES = ("IMAGE",)
     FUNCTION = "upscale"
 
     CATEGORY = "image/upscaling"
 
-    def upscale(self, upscale_model, image):
+    def upscale(self, upscale_model, image, tile_size=512):
         logger.debug("start upscale")
         device = model_management.get_torch_device()
         upscale_model.to(device)
@@ -44,7 +45,7 @@ class ImageUpscaleWithModel:
         in_img = image.movedim(-1,-3).to(device)
         free_memory = model_management.get_free_memory(device)
         logger.debug("after model_management.get_free_memory")
-        tile = 1200
+        tile = tile_size if tile_size else 512
         overlap = 32
 
         oom = True
