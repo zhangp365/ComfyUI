@@ -1415,9 +1415,9 @@ class SaveImage:
     def INPUT_TYPES(s):
         return {"required": 
                     {"images": ("IMAGE", ),
-                     "filename_prefix": ("STRING", {"default": "ComfyUI"}),
-                      "filename_suffix": (["jpg","png"], {"default": "jpg"})},
+                     "filename_prefix": ("STRING", {"default": "ComfyUI"})},
                 "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
+                "optional": {"filename_suffix": (["jpg","png"], {"default": "jpg"})}
                 }
 
     RETURN_TYPES = ()
