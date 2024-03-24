@@ -155,9 +155,12 @@ class PhotoMakerEncode:
         special_token = "photomaker"
         pixel_values = comfy.clip_vision.clip_preprocess(image.to(photomaker.load_device)).float()
         try:
+            if "photomaker" in text:
+                text = text.replace("photomaker"," photomaker ")
             index = text.split(" ").index(special_token) + 1
-        except ValueError:
+        except ValueError:            
             index = -1
+        logger.info(f"photomaker in prompt index:{index}, photomaker is running:{index>0}")
         tokens = clip.tokenize(text, return_word_ids=True)
         out_tokens = {}
         for k in tokens:
