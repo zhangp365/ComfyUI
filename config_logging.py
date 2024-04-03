@@ -16,7 +16,7 @@ if not os.path.exists(config_dir):
 class LoggerWriter:
     def __init__(self, level):
         self.level = level
-        self.encoding = "utf-8"
+        self.encoding = None
 
     def write(self, message):
         if message != '\n':
