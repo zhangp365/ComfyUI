@@ -109,10 +109,10 @@ def prompt_worker(q, server):
 
         queue_item = q.get(timeout=timeout)
         if queue_item is not None:
-            item, item_id = queue_item
-            logger.debug("Prompt start")
+            item, item_id = queue_item            
             execution_start_time = time.perf_counter()
             prompt_id = item[1]
+            logger.info(f"Prompt start:{prompt_id} ")
             server.last_prompt_id = prompt_id
 
             e.execute(item[2], prompt_id, item[3], item[4])
@@ -128,7 +128,7 @@ def prompt_worker(q, server):
 
             current_time = time.perf_counter()
             execution_time = current_time - execution_start_time
-            logger.info("Prompt executed in {:.2f} seconds".format(execution_time))
+            logger.info(f"Prompt id:{prompt_id} executed in {execution_time:.2f} seconds")
 
         flags = q.get_flags()
         free_memory = flags.get("free_memory", False)
