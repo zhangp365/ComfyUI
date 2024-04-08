@@ -5,8 +5,6 @@ import yaml
 import signal
 import re
 
-watch_log_keyword_kill_process = False
-
 
 app_dir = os.path.dirname(os.path.realpath(__file__))
 config_dir = os.path.join(app_dir,"config")
@@ -52,19 +50,22 @@ class KeywordWatcher(logging.Handler):
 # 加载 YAML 文件中的关键字
 def load_keywords_from_yaml(filename):
     if not os.path.exists(filename):
+        content = {"watch_log_keyword_kill_process": False, "error_keywords":["RuntimeError: CUDA error"]}
         with open(filename, 'w') as file:
-            file.write("RuntimeError: CUDA error")
+            yaml.dump(content,file)
     with open(filename, 'r') as file:
-        keywords = file.readlines()
-    return '|'.join(keywords)
+        content = yaml.safe_load(file)
+        keywords = content.get("error_keywords")
+        watch_log_keyword_kill_process = content.get("watch_log_keyword_kill_process")
+        return '|'.join(keywords),watch_log_keyword_kill_process
 
 
 
 setup_logging('logging_config.yaml')
+keywords_regex,watch_log_keyword_kill_process = load_keywords_from_yaml(os.path.join(config_dir,'sys_exit_with_keywords_in_log.yaml'))
 
-if watch_log_keyword_kill_process:
-    # 从 YAML 文件中加载关键字并构建正则表达式
-    keywords_regex = load_keywords_from_yaml(os.path.join(config_dir,'sys_exit_with_keywords_in_log.yaml'))
+if watch_log_keyword_kill_process: 
     root_logger = logging.getLogger()
     root_logger.addHandler(KeywordWatcher(keywords_regex))
+    root_logger.info("open watch_log_keyword_kill_process!!!")
 
