@@ -163,7 +163,7 @@ class PhotoMakerEncode:
             index = -1
 
         tokens = clip.tokenize(text, return_word_ids=True)
-        logger.info(f"photomaker in prompt index:{index}, tokens l :{tokens['l']}, tokens g :{tokens['g']},photomaker is running:{index>0}")
+        logger.debug(f"photomaker in prompt index:{index}, tokens l :{tokens['l']}, tokens g :{tokens['g']},photomaker is running:{index>0}")
 
         out_tokens = {}
         for k in tokens:
