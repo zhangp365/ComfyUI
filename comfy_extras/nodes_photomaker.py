@@ -146,7 +146,8 @@ class PhotoMakerEncode:
                               "text": ("STRING", {"multiline": True, "default": "photograph of photomaker"}),
                              }}
 
-    RETURN_TYPES = ("CONDITIONING",)
+    RETURN_TYPES = ("CONDITIONING","CONDITIONING",)
+    RETURN_NAMES = ("merged conditioning", "text only conditioning")
     FUNCTION = "apply_photomaker"
 
     CATEGORY = "_for_testing/photomaker"
@@ -160,8 +161,10 @@ class PhotoMakerEncode:
             index = text.split(" ").index(special_token) + 1
         except ValueError:            
             index = -1
-        logger.info(f"photomaker in prompt index:{index}, photomaker is running:{index>0}")
+
         tokens = clip.tokenize(text, return_word_ids=True)
+        logger.info(f"photomaker in prompt index:{index}, tokens l :{tokens['l']}, tokens g :{tokens['g']},photomaker is running:{index>0}")
+
         out_tokens = {}
         for k in tokens:
             out_tokens[k] = []
@@ -182,7 +185,7 @@ class PhotoMakerEncode:
         else:
             out = cond
 
-        return ([[out, {"pooled_output": pooled}]], )
+        return ([[out, {"pooled_output": pooled}]], [[cond, {"pooled_output": pooled}]],)
 
 
 NODE_CLASS_MAPPINGS = {
