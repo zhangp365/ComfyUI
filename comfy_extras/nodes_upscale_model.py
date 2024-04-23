@@ -40,6 +40,12 @@ class ImageUpscaleWithModel:
     def upscale(self, upscale_model, image, tile_size=512):
         logger.debug("start upscale")
         device = model_management.get_torch_device()
+
+        memory_required = model_management.module_size(upscale_model)
+        memory_required += (512 * 512 * 3) * image.element_size() * max(upscale_model.scale, 1.0) * 256.0 #The 256.0 is an estimate of how much some of these models take, TODO: make it more accurate
+        memory_required += image.nelement() * image.element_size()
+        model_management.free_memory(memory_required, device)
+
         upscale_model.to(device)
         logger.debug("after model to device")
         in_img = image.movedim(-1,-3).to(device)
