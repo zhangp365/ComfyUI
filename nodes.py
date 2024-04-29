@@ -1960,6 +1960,7 @@ def init_custom_nodes():
         "nodes_model_merging_model_specific.py",
         "nodes_pag.py",
         "nodes_align_your_steps.py",
+        "nodes_attention_multiply.py",
     ]
 
     import_failed = []
