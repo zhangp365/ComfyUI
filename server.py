@@ -478,6 +478,7 @@ class PromptServer():
                 if valid[0]:
                     prompt_id = str(json_data.get("prompt_id", uuid.uuid4()))
                     outputs_to_execute = valid[2]
+                    logger.info(f"Prompt id:{prompt_id} start to queue.")
                     self.prompt_queue.put((number, prompt_id, prompt, extra_data, outputs_to_execute))
                     response = {"prompt_id": prompt_id, "number": number, "node_errors": valid[3]}
                     return web.json_response(response)

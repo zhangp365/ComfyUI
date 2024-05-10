@@ -112,7 +112,7 @@ def prompt_worker(q, server):
             item, item_id = queue_item            
             execution_start_time = time.perf_counter()
             prompt_id = item[1]
-            logger.info(f"Prompt start:{prompt_id} ")
+            logger.info(f"Prompt id:{prompt_id} start to execute")
             server.last_prompt_id = prompt_id
 
             e.execute(item[2], prompt_id, item[3], item[4])
