@@ -23,6 +23,9 @@ class LoggerWriter:
     def flush(self):
         pass
 
+    def fileno(self):
+        return 1  
+    
 def setup_logging(config_path):
     if(not os.path.exists("logs")):
         os.mkdir("logs")   
