@@ -3,7 +3,7 @@ import torch
 import torch.nn.functional as F
 from torch import nn, einsum
 from einops import rearrange, repeat
-from typing import Optional, Any
+from typing import Optional
 import logging
 
 from .diffusionmodules.util import AlphaBlender, timestep_embedding
@@ -19,12 +19,13 @@ from comfy.cli_args import args
 import comfy.ops
 ops = comfy.ops.disable_weight_init
 
+FORCE_UPCAST_ATTENTION_DTYPE = model_management.force_upcast_attention_dtype()
 
 def get_attn_precision(attn_precision):
     if args.dont_upcast_attention:
         return None
-    if attn_precision is None and args.force_upcast_attention:
-        return torch.float32
+    if FORCE_UPCAST_ATTENTION_DTYPE is not None:
+        return FORCE_UPCAST_ATTENTION_DTYPE
     return attn_precision
 
 def exists(val):
@@ -313,9 +314,19 @@ except:
 def attention_xformers(q, k, v, heads, mask=None, attn_precision=None):
     b, _, dim_head = q.shape
     dim_head //= heads
+
+    disabled_xformers = False
+
     if BROKEN_XFORMERS:
         if b * heads > 65535:
-            return attention_pytorch(q, k, v, heads, mask)
+            disabled_xformers = True
+
+    if not disabled_xformers:
+        if torch.jit.is_tracing() or torch.jit.is_scripting():
+            disabled_xformers = True
+
+    if disabled_xformers:
+        return attention_pytorch(q, k, v, heads, mask)
 
     q, k, v = map(
         lambda t: t.reshape(b, -1, heads, dim_head),
@@ -625,7 +636,7 @@ class SpatialTransformer(nn.Module):
         x = self.norm(x)
         if not self.use_linear:
             x = self.proj_in(x)
-        x = x.movedim(1, -1).flatten(1, 2).contiguous()
+        x = x.movedim(1, 3).flatten(1, 2).contiguous()
         if self.use_linear:
             x = self.proj_in(x)
         for i, block in enumerate(self.transformer_blocks):
@@ -633,7 +644,7 @@ class SpatialTransformer(nn.Module):
             x = block(x, context=context[i], transformer_options=transformer_options)
         if self.use_linear:
             x = self.proj_out(x)
-        x = x.reshape(x.shape[0], h, w, x.shape[-1]).movedim(-1, 1).contiguous()
+        x = x.reshape(x.shape[0], h, w, x.shape[-1]).movedim(3, 1).contiguous()
         if not self.use_linear:
             x = self.proj_out(x)
         return x + x_in
