@@ -124,7 +124,7 @@ def recursive_execute(server, prompt, outputs, current_item, extra_data, execute
     class_def = nodes.NODE_CLASS_MAPPINGS[class_type]
     if unique_id in outputs:
         return (True, None, None)
-
+    
     for x in inputs:
         input_data = inputs[x]
 
@@ -138,6 +138,7 @@ def recursive_execute(server, prompt, outputs, current_item, extra_data, execute
                     return result
 
     input_data_all = None
+    logger.debug(f"{ class_type } node got all inputs and start >>>")
     try:
         input_data_all = get_input_data(inputs, class_def, unique_id, outputs, prompt, extra_data)
         if server.client_id is not None:
@@ -191,7 +192,7 @@ def recursive_execute(server, prompt, outputs, current_item, extra_data, execute
         return (False, error_details, ex)
 
     executed.add(unique_id)
-
+    logger.debug(f"{ class_type } recursived all inputs and executed ...")
     return (True, None, None)
 
 def recursive_will_execute(prompt, outputs, current_item, memo={}):
