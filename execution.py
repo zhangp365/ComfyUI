@@ -370,8 +370,9 @@ class PromptExecutor:
                 if x not in current_outputs:
                     d = self.outputs_ui.pop(x)
                     del d
-
+            logger.debug("PromptExecutor start, finished delete output, object_storage. start cleanup models")
             comfy.model_management.cleanup_models(keep_clone_weights_loaded=True)
+            logger.debug("PromptExecutor start, finished cleanup models, start to add_message to ui.")
             self.add_message("execution_cached",
                           { "nodes": list(current_outputs) , "prompt_id": prompt_id},
                           broadcast=False)
