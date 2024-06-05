@@ -1393,7 +1393,8 @@ class SaveImage:
                     {"images": ("IMAGE", ),
                      "filename_prefix": ("STRING", {"default": "ComfyUI"})},
                 "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
-                "optional": {"filename_suffix": (["jpg","png"], {"default": "jpg"})}
+                "optional": {"filename_suffix": (["jpg","png"], {"default": "jpg"}),
+                             "grayscale": ("BOOLEAN", {"default": False, "label_on": "enabled", "label_off": "disabled"}),}
                 }
 
     RETURN_TYPES = ()
@@ -1403,7 +1404,7 @@ class SaveImage:
 
     CATEGORY = "image"
 
-    def save_images(self, images, filename_prefix="ComfyUI", filename_suffix= "jpg",prompt=None, extra_pnginfo=None):
+    def save_images(self, images, filename_prefix="ComfyUI", filename_suffix= "jpg",prompt=None, extra_pnginfo=None, grayscale=False):
         
         logger.debug("save_images start:")
         filename_prefix += self.prefix_append
@@ -1422,6 +1423,8 @@ class SaveImage:
                         metadata.add_text(x, json.dumps(extra_pnginfo[x]))
 
             filename_with_batch_num = filename.replace("%batch_num%", str(batch_number))
+            if grayscale and len(numpy_image.shape) != 2:
+                numpy_image = cv2.cvtColor(numpy_image, cv2.COLOR_RGB2GRAY)
             if filename_suffix == "jpg":           
                 if len(numpy_image.shape) == 2:
                     opencv_image = cv2.cvtColor(numpy_image, cv2.COLOR_GRAY2BGR)
