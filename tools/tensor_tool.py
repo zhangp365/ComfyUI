@@ -7,3 +7,6 @@ def tensor2Bytes(image):
     torch.save(image, buffer)
     buffer.seek(0)
     return buffer
+
+def bytes2Tensor(bytes):
+    return torch.load(BytesIO(bytes))

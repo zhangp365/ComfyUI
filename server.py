@@ -29,7 +29,7 @@ import comfy.model_management
 
 from app.user_manager import UserManager
 from tools.cache import ConnectCache
-from tools.tensor_tool import tensor2Bytes
+from tools.tensor_tool import tensor2Bytes, bytes2Tensor
 import time
 from aiohttp.multipart import MultipartWriter
 
@@ -549,10 +549,10 @@ class PromptServer():
                     json_data = json.loads(await part.text())
                 elif part.name == 'positive':
                     positive = await part.read()
-                    positive = torch.load(BytesIO(positive))
+                    positive = bytes2Tensor(positive)
                 elif part.name == 'negative':
                     negative = await part.read()
-                    negative = torch.load(BytesIO(negative))
+                    negative = bytes2Tensor(negative)
 
             if not json_data:
                 return web.json_response({"error": "Missing JSON data"}, status=400)
