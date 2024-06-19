@@ -8,6 +8,7 @@ import importlib.util
 import folder_paths
 import time
 import logging
+from tools.cache import ConnectCache
 logger = logging.getLogger(__file__)
 
 def execute_prestartup_script():
@@ -113,6 +114,7 @@ def prompt_worker(q, server):
             execution_start_time = time.perf_counter()
             prompt_id = item[1]
             logger.info(f"Prompt id:{prompt_id} start to execute")
+            ConnectCache.set_current_id(prompt_id)
             server.last_prompt_id = prompt_id
 
             e.execute(item[2], prompt_id, item[3], item[4])

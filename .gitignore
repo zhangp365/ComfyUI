@@ -23,5 +23,5 @@ start.bat
 /face_data
 .vscode
 logs
-config
 *.jpg
+config/gender_words_config.yaml

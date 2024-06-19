@@ -64,7 +64,7 @@ def load_keywords_from_yaml(filename):
 
 
 
-setup_logging('logging_config.yaml')
+setup_logging(os.path.join(config_dir,'logging_config.yaml'))
 keywords_regex,watch_log_keyword_kill_process = load_keywords_from_yaml(os.path.join(config_dir,'sys_exit_with_keywords_in_log.yaml'))
 
 if watch_log_keyword_kill_process: 

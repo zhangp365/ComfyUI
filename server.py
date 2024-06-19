@@ -28,6 +28,10 @@ import comfy.utils
 import comfy.model_management
 
 from app.user_manager import UserManager
+from tools.cache import ConnectCache
+from tools.tensor_tool import tensor2Bytes
+import time
+from aiohttp.multipart import MultipartWriter
 
 class BinaryEventTypes:
     PREVIEW_IMAGE = 1
@@ -531,6 +535,106 @@ class PromptServer():
 
             return web.Response(status=200)
         
+        @routes.post("/excute_sampling_task")
+        async def excute_sampling_task(request):
+            logger.info("start excute_sampling_task")
+            
+            reader = await request.multipart()
+            json_data = {}
+            positive = None
+            negative = None
+
+            async for part in reader:
+                if part.name == 'json_data':
+                    json_data = json.loads(await part.text())
+                elif part.name == 'positive':
+                    positive = await part.read()
+                    positive = torch.load(BytesIO(positive))
+                elif part.name == 'negative':
+                    negative = await part.read()
+                    negative = torch.load(BytesIO(negative))
+
+            if not json_data:
+                return web.json_response({"error": "Missing JSON data"}, status=400)
+            
+            if positive is None:
+                return web.json_response({"error": "Missing positive data"}, status=400)
+            
+            if negative is None:
+                return web.json_response({"error": "Missing negative data"}, status=400)
+            
+            json_data = self.trigger_on_prompt(json_data)
+            
+            queue_limit = json_data.get("queue_limit", 5)
+            current_queue = self.prompt_queue.get_current_queue()
+            queue_pending = current_queue[1]
+            if len(queue_pending) >= queue_limit:
+                return web.json_response(
+                    {"error": f"Current task queue length reached limit: {queue_limit}", "node_errors": []},
+                    status=400
+                )
+
+            number = float(json_data.get('number', self.number))
+            if 'front' in json_data and json_data['front']:
+                number = -number
+            self.number += 1
+
+            if "prompt" in json_data:
+                prompt = json_data["prompt"]
+                valid = execution.validate_prompt(prompt)
+                extra_data = json_data.get("extra_data", {})
+                extra_data["client_id"] = json_data.get("client_id", "")
+
+                if valid[0]:
+                    prompt_id = str(json_data.get("prompt_id", uuid.uuid4()))
+                    if positive is not None:
+                        ConnectCache.put_subitem(prompt_id, "positive", positive)
+                    if negative is not None:
+                        ConnectCache.put_subitem(prompt_id, "negative", negative)
+
+                    outputs_to_execute = valid[2]
+                    logger.info(f"Prompt id: {prompt_id} start to queue.")
+                    self.prompt_queue.put((number, prompt_id, prompt, extra_data, outputs_to_execute))
+
+                    start = time.time()
+                    while True:
+                        if time.time() - start > 30:
+                            logger.warning(f"Prompt id: {prompt_id} processing timeout.")
+                            break
+                        await asyncio.sleep(0.005)  # non-blocking sleep
+                        current_queue = self.prompt_queue.get_current_queue()
+                        prompt_ids = [item[1] for item in current_queue[0] + current_queue[1]]
+                        if prompt_id not in prompt_ids:
+                            break
+                    
+                    logger.info(f"excute_sampling_task Prompt id: {prompt_id} get result, start to return.")        
+                    latent = ConnectCache.get_subitem(prompt_id, "latent")
+                    image = ConnectCache.get_subitem(prompt_id, "image")
+                    ConnectCache.delete_item(prompt_id)
+
+                    if image is None and latent is None:
+                         return web.json_response({"prompt_id":prompt_id,"error": "No result when finished. please check the log.", "node_errors": []}, status=400)
+                    
+                    writer = MultipartWriter('mixed')
+                    part = writer.append(json.dumps({"prompt_id": prompt_id}))
+                    part.set_content_disposition('inline', name='text')
+
+                    if image is not None:
+                        part = writer.append(tensor2Bytes(image), {'Content-Type': 'application/octet-stream'})
+                        part.set_content_disposition('attachment', name='file', filename='image')
+
+                    if latent is not None:
+                        part = writer.append(tensor2Bytes(latent), {'Content-Type': 'application/octet-stream'})
+                        part.set_content_disposition('attachment', name='file', filename='latent')                   
+
+                    return web.Response(body=writer, content_type=writer.content_type)
+                else:
+                    logger.warning(f"Invalid prompt: {valid[1]}")
+                    return web.json_response({"error": valid[1], "node_errors": valid[3]}, status=400)
+            else:
+                return web.json_response({"error": "No prompt provided", "node_errors": []}, status=400)
+
+
     def add_routes(self):
         self.user_manager.add_routes(self.routes)
         self.app.add_routes(self.routes)
