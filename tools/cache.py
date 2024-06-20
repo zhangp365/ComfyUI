@@ -1,4 +1,5 @@
-
+import logging
+logger = logging.getLogger(__file__)
 
 class ConnectCache():
     cache = {}
@@ -12,10 +13,15 @@ class ConnectCache():
         cls.cache[id] = value
 
     @classmethod
-    def put_subitem(cls, id: str, subkey: str, value):
+    def put_subitem(cls, id: str, subkey: str, value, create_id_item = True):
         if id not in cls.cache:
-            cls.cache[id] = {}
+            if create_id_item:
+                cls.cache[id] = {}
+            else:
+                logger.warn(f"id: {id} does not exist, can't put the subkey:{subkey}")
+                return False
         cls.cache[id][subkey] = value
+        return True
 
     @classmethod
     def get_subitem(cls, id: str, subkey: str):
@@ -23,7 +29,8 @@ class ConnectCache():
 
     @classmethod
     def delete_item(cls, id: str):
-        del cls.cache[id]
+        if id in cls.cache:
+            del cls.cache[id]
 
     @classmethod
     def set_current_id(cls, id):
@@ -37,14 +44,19 @@ class ConnectCache():
         return current_id
 
     @classmethod
-    def put_current_id_subitem(cls, subkey: str, value):
+    def put_current_id_subitem(cls, subkey: str, value, create_id_item = True):
         id = cls.get_current_id()
         if id is None:
             raise Exception(
                 "can't locate current id, can't put subitem to cache")
         if id not in cls.cache:
-            cls.cache[id] = {}
+            if create_id_item:
+                cls.cache[id] = {}
+            else:
+                logger.warn(f"id: {id} does not exist, can't put the subkey:{subkey}")
+                return False
         cls.cache[id][subkey] = value
+        return True
 
     @classmethod
     def get_current_id_subitem(cls, subkey: str):

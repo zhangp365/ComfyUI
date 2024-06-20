@@ -118,6 +118,7 @@ def prompt_worker(q, server):
             server.last_prompt_id = prompt_id
 
             e.execute(item[2], prompt_id, item[3], item[4])
+            ConnectCache.put_subitem(prompt_id, "finished", True, create_id_item=False)
             need_gc = True
             q.task_done(item_id,
                         e.outputs_ui,
@@ -127,7 +128,7 @@ def prompt_worker(q, server):
                             messages=e.status_messages))
             if server.client_id is not None:
                 server.send_sync("executing", { "node": None, "prompt_id": prompt_id }, server.client_id)
-
+            
             current_time = time.perf_counter()
             execution_time = current_time - execution_start_time
             logger.info(f"Prompt id:{prompt_id} executed in {execution_time:.2f} seconds")

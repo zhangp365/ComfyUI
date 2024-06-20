@@ -587,6 +587,7 @@ class PromptServer():
 
                 if valid[0]:
                     prompt_id = str(json_data.get("prompt_id", uuid.uuid4()))
+                    ConnectCache.delete_item(prompt_id)
                     if positive is not None:
                         ConnectCache.put_subitem(prompt_id, "positive", positive)
                     if negative is not None:
@@ -602,9 +603,8 @@ class PromptServer():
                             logger.warning(f"Prompt id: {prompt_id} processing timeout.")
                             break
                         await asyncio.sleep(0.005)  # non-blocking sleep
-                        current_queue = self.prompt_queue.get_current_queue()
-                        prompt_ids = [item[1] for item in current_queue[0] + current_queue[1]]
-                        if prompt_id not in prompt_ids:
+                        finished = ConnectCache.get_subitem(prompt_id, "finished")
+                        if finished:
                             break
                     
                     logger.info(f"excute_sampling_task Prompt id: {prompt_id} get result, start to return.")        
