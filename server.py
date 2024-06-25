@@ -33,6 +33,23 @@ from tools.tensor_tool import tensor2Bytes, bytes2Tensor
 import time
 from aiohttp.multipart import MultipartWriter
 
+REQUEST_TOKEN = os.getenv('REQUEST_TOKEN')
+
+if REQUEST_TOKEN is None:
+    logger.warn("\n environment variable REQUEST_TOKEN not exists!!! \n")
+
+@web.middleware
+async def token_validation_middleware(request, handler):
+    if REQUEST_TOKEN is not None:
+        token = request.headers.get('Authorization')
+        if token:
+            # remove Bearer
+            token = token[7:]
+        if token != REQUEST_TOKEN:
+            return web.Response(text="Unauthorized", status=401)
+    return await handler(request)
+
+
 class BinaryEventTypes:
     PREVIEW_IMAGE = 1
     UNENCODED_PREVIEW_IMAGE = 2
@@ -81,7 +98,7 @@ class PromptServer():
         self.messages = asyncio.Queue()
         self.number = 0
 
-        middlewares = [cache_control]
+        middlewares = [cache_control, token_validation_middleware]
         if args.enable_cors_header:
             middlewares.append(create_cors_middleware(args.enable_cors_header))
 
