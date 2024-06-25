@@ -637,6 +637,19 @@ class PromptServer():
 
     def add_routes(self):
         self.user_manager.add_routes(self.routes)
+
+        # Prefix every route with /api for easier matching for delegation.
+        # This is very useful for frontend dev server, which need to forward
+        # everything except serving of static files.
+        # Currently both the old endpoints without prefix and new endpoints with
+        # prefix are supported.
+        api_routes = web.RouteTableDef()
+        for route in self.routes:
+            # Custom nodes might add extra static routes. Only process non-static
+            # routes to add /api prefix.
+            if isinstance(route, web.RouteDef):
+                api_routes.route(route.method, "/api" + route.path)(route.handler, **route.kwargs)
+        self.app.add_routes(api_routes)
         self.app.add_routes(self.routes)
 
         for name, dir in nodes.EXTENSION_WEB_DIRS.items():

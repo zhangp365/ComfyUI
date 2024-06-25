@@ -2010,6 +2010,7 @@ def init_custom_nodes():
         "nodes_webcam.py",
         "nodes_audio.py",
         "nodes_sd3.py",
+        "nodes_gits.py",
     ]
 
     import_failed = []
