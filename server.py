@@ -33,19 +33,19 @@ from tools.tensor_tool import tensor2Bytes, bytes2Tensor
 import time
 from aiohttp.multipart import MultipartWriter
 
-REQUEST_TOKEN = os.getenv('REQUEST_TOKEN')
+SERVER_TOKEN = os.getenv('SERVER_TOKEN')
 
-if REQUEST_TOKEN is None:
-    logger.warn("\n environment variable REQUEST_TOKEN not exists!!! \n")
+if SERVER_TOKEN is None:
+    logger.warn("\n environment variable SERVER_TOKEN not exists!!! \n")
 
 @web.middleware
 async def token_validation_middleware(request, handler):
-    if REQUEST_TOKEN is not None:
+    if SERVER_TOKEN is not None:
         token = request.headers.get('Authorization')
         if token:
             # remove Bearer
             token = token[7:]
-        if token != REQUEST_TOKEN:
+        if token != SERVER_TOKEN:
             return web.Response(text="Unauthorized", status=401)
     return await handler(request)
 
