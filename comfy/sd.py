@@ -432,9 +432,11 @@ def load_clip(ckpt_paths, embedding_directory=None, clip_type=CLIPType.STABLE_DI
             clip_target.clip = sd2_clip.SD2ClipModel
             clip_target.tokenizer = sd2_clip.SD2Tokenizer
         elif "encoder.block.23.layer.1.DenseReluDense.wi_1.weight" in clip_data[0]:
-            dtype_t5 = clip_data[0]["encoder.block.23.layer.1.DenseReluDense.wi_1.weight"].dtype
-            clip_target.clip = sd3_clip.sd3_clip(clip_l=False, clip_g=False, t5=True, dtype_t5=dtype_t5)
-            clip_target.tokenizer = sd3_clip.SD3Tokenizer
+            weight = clip_data[0]["encoder.block.23.layer.1.DenseReluDense.wi_1.weight"]
+            dtype_t5 = weight.dtype
+            if weight.shape[-1] == 4096:
+                clip_target.clip = sd3_clip.sd3_clip(clip_l=False, clip_g=False, t5=True, dtype_t5=dtype_t5)
+                clip_target.tokenizer = sd3_clip.SD3Tokenizer
         elif "encoder.block.0.layer.0.SelfAttention.k.weight" in clip_data[0]:
             clip_target.clip = sa_t5.SAT5Model
             clip_target.tokenizer = sa_t5.SAT5Tokenizer
@@ -563,24 +565,32 @@ def load_checkpoint_guess_config(ckpt_path, output_vae=True, output_clip=True, o
     return (model_patcher, clip, vae, clipvision)
 
 
-def load_unet_state_dict(sd): #load unet in diffusers format
+def load_unet_state_dict(sd): #load unet in diffusers or regular format
+
+    #Allow loading unets from checkpoint files
+    checkpoint = False
+    diffusion_model_prefix = model_detection.unet_prefix_from_state_dict(sd)
+    temp_sd = comfy.utils.state_dict_prefix_replace(sd, {diffusion_model_prefix: ""}, filter_keys=True)
+    if len(temp_sd) > 0:
+        sd = temp_sd
+        checkpoint = True
+
     parameters = comfy.utils.calculate_parameters(sd)
     unet_dtype = model_management.unet_dtype(model_params=parameters)
     load_device = model_management.get_torch_device()
 
-    if 'transformer_blocks.0.attn.add_q_proj.weight' in sd: #MMDIT SD3
+    if checkpoint or "input_blocks.0.0.weight" in sd or 'clf.1.weight' in sd: #ldm or stable cascade
+        model_config = model_detection.model_config_from_unet(sd, "")
+        if model_config is None:
+            return None
+        new_sd = sd
+    elif 'transformer_blocks.0.attn.add_q_proj.weight' in sd: #MMDIT SD3
         new_sd = model_detection.convert_diffusers_mmdit(sd, "")
         if new_sd is None:
             return None
         model_config = model_detection.model_config_from_unet(new_sd, "")
         if model_config is None:
             return None
-    elif "input_blocks.0.0.weight" in sd or 'clf.1.weight' in sd: #ldm or stable cascade
-        model_config = model_detection.model_config_from_unet(sd, "")
-        if model_config is None:
-            return None
-        new_sd = sd
-
     else: #diffusers
         model_config = model_detection.model_config_from_diffusers_unet(sd)
         if model_config is None:
@@ -627,5 +637,10 @@ def save_checkpoint(output_path, model, clip=None, vae=None, clip_vision=None, m
     sd = model.model.state_dict_for_saving(clip_sd, vae.get_sd(), clip_vision_sd)
     for k in extra_keys:
         sd[k] = extra_keys[k]
+
+    for k in sd:
+        t = sd[k]
+        if not t.is_contiguous():
+            sd[k] = t.contiguous()
 
     comfy.utils.save_torch_file(sd, output_path, metadata=metadata)
