@@ -27,3 +27,5 @@ start.bat
 logs
 *.jpg
 config/gender_words_config.yaml
+*.pem
+backup_custom_nodes

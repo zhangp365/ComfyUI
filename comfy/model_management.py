@@ -324,6 +324,7 @@ def unload_model_clones(model, unload_weights_only=True, force_unload=True):
     to_unload = []
     for i in range(len(current_loaded_models)):
         if model.is_clone(current_loaded_models[i].model):
+            logging.debug(f"model is clone:{model}")
             to_unload = [i] + to_unload
 
     if len(to_unload) == 0:
@@ -332,6 +333,7 @@ def unload_model_clones(model, unload_weights_only=True, force_unload=True):
     same_weights = 0
     for i in to_unload:
         if model.clone_has_same_weights(current_loaded_models[i].model):
+            logging.debug(f"model clone_has_same_weights:{model}")
             same_weights += 1
 
     if same_weights == len(to_unload):

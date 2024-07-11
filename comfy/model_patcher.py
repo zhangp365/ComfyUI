@@ -142,6 +142,13 @@ class ModelPatcher:
             to["patches"] = {}
         to["patches"][name] = to["patches"].get(name, []) + [patch]
 
+    def replace_model_patch(self, patch, name):
+        to = self.model_options["transformer_options"]
+        if "patches" not in to:
+            to["patches"] = {}
+        to["patches"][name] = [patch]
+
+
     def set_model_patch_replace(self, patch, name, block_name, number, transformer_index=None):
         self.model_options = set_model_options_patch_replace(self.model_options, patch, name, block_name, number, transformer_index=transformer_index)
 
