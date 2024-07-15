@@ -28,4 +28,6 @@ logs
 *.jpg
 config/gender_words_config.yaml
 *.pem
-backup_custom_nodes
+
+.github/workflows/stable-release.yml
+
