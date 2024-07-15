@@ -345,6 +345,8 @@ class VAEEncodeForInpaint:
             mask_erosion = torch.clamp(torch.nn.functional.conv2d(mask.round(), kernel_tensor, padding=padding), 0, 1)
 
         m = (1.0 - mask.round()).squeeze(1)
+        if m.device != pixels.device:
+            m = m.to(pixels.device)
         for i in range(3):
             pixels[:,:,:,i] -= 0.5
             pixels[:,:,:,i] *= m
