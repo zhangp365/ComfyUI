@@ -30,4 +30,4 @@ config/gender_words_config.yaml
 *.pem
 
 .github/workflows/stable-release.yml
-
+*.pth
