@@ -3,6 +3,9 @@ import hashlib
 from comfy.cli_args import args
 
 from PIL import ImageFile, UnidentifiedImageError
+from pillow_heif import register_heif_opener
+
+register_heif_opener()
 
 def conditioning_set_values(conditioning, values={}):
     c = []

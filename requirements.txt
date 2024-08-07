@@ -10,6 +10,7 @@ safetensors>=0.4.2
 aiohttp
 pyyaml
 Pillow==10.3.0
+pillow-heif
 scipy
 tqdm
 psutil
