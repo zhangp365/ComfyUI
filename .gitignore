@@ -32,3 +32,5 @@ config/gender_words_config.yaml
 
 .github/workflows/stable-release.yml
 *.pth
+backup_custom_nodes/
+test*.*
