@@ -11,6 +11,10 @@ import logging
 from tools.cache import ConnectCache
 logger = logging.getLogger(__file__)
 from comfy.cli_args import args
+from app.logger import setup_logger
+
+
+setup_logger(verbose=args.verbose)
 
 
 def execute_prestartup_script():
@@ -253,6 +257,7 @@ if __name__ == "__main__":
     folder_paths.add_model_folder_path("clip", os.path.join(folder_paths.get_output_directory(), "clip"))
     folder_paths.add_model_folder_path("vae", os.path.join(folder_paths.get_output_directory(), "vae"))
     folder_paths.add_model_folder_path("diffusion_models", os.path.join(folder_paths.get_output_directory(), "diffusion_models"))
+    folder_paths.add_model_folder_path("loras", os.path.join(folder_paths.get_output_directory(), "loras"))
 
     if args.input_directory:
         input_dir = os.path.abspath(args.input_directory)
