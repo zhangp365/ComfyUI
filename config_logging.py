@@ -15,10 +15,12 @@ class LoggerWriter:
     def __init__(self, level):
         self.level = level
         self.encoding = None
+        self.last_message = None
 
     def write(self, message):
-        if message != '\n':
+        if message != '\n' and message != self.last_message:
             self.level(message.strip())
+            self.last_message = message
 
     def flush(self):
         pass
@@ -32,9 +34,9 @@ def setup_logging(config_path):
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f.read())
         logging.config.dictConfig(config)
-    import sys
-    sys.stdout = LoggerWriter(logging.info)
-    sys.stderr = LoggerWriter(logging.warning)
+    # import sys
+    # sys.stdout = LoggerWriter(logging.info)
+    # sys.stderr = LoggerWriter(logging.warning)
 
 
 
