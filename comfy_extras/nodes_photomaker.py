@@ -178,7 +178,7 @@ class PhotoMakerEncode:
 
         if index > 0:
             token_index = index - 1
-            num_id_images = 1
+            num_id_images = image.shape[0]
             class_tokens_mask = [True if token_index <= i < token_index+num_id_images else False for i in range(cond.shape[1])]
             out = photomaker(id_pixel_values=pixel_values.unsqueeze(0), prompt_embeds=cond.to(photomaker.load_device),
                             class_tokens_mask=torch.tensor(class_tokens_mask, dtype=torch.bool, device=photomaker.load_device).unsqueeze(0))

@@ -1,4 +1,3 @@
-import config_logging
 import comfy.options
 comfy.options.enable_args_parsing()
 

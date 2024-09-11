@@ -6,7 +6,7 @@ import signal
 import re
 
 
-app_dir = os.path.dirname(os.path.realpath(__file__))
+app_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 config_dir = os.path.join(app_dir,"config")
 if not os.path.exists(config_dir):
     os.makedirs(config_dir)
