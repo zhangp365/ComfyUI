@@ -16,10 +16,18 @@ class LoggerWriter:
         self.level = level
         self.encoding = None
         self.last_message = None
+        self.in_recursion = False
 
     def write(self, message):
+        if self.in_recursion:
+            return
+
         if message != '\n' and message != self.last_message:
-            self.level(message.strip())
+            try:
+                self.in_recursion = True
+                self.level(message.strip())
+            finally:
+                self.in_recursion = False
             self.last_message = message
 
     def flush(self):
@@ -34,8 +42,8 @@ def setup_logging(config_path):
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f.read())
         logging.config.dictConfig(config)
-    # import sys
-    # sys.stdout = LoggerWriter(logging.info)
+    import sys
+    sys.stdout = LoggerWriter(logging.info)
     # sys.stderr = LoggerWriter(logging.warning)
 
 
