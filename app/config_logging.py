@@ -5,7 +5,6 @@ import yaml
 import signal
 import re
 
-
 app_dir = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 config_dir = os.path.join(app_dir,"config")
 if not os.path.exists(config_dir):
@@ -44,7 +43,7 @@ def setup_logging(config_path):
         logging.config.dictConfig(config)
     import sys
     sys.stdout = LoggerWriter(logging.info)
-    # sys.stderr = LoggerWriter(logging.warning)
+    sys.stderr = LoggerWriter(logging.warning)
 
 
 
