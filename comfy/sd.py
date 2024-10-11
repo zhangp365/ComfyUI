@@ -320,6 +320,7 @@ class VAE:
             free_memory = model_management.get_free_memory(self.device)
             batch_number = int(free_memory / memory_used)
             batch_number = max(1, batch_number)
+            batch_number = min(batch_number, 10) #In the large vram gpu, this batch_number above 10 may cuase decoding very slowly.
 
             pixel_samples = torch.empty((samples_in.shape[0], self.output_channels) + tuple(map(lambda a: a * self.upscale_ratio, samples_in.shape[2:])), device=self.output_device)
             for x in range(0, samples_in.shape[0], batch_number):
