@@ -1,8 +1,7 @@
+import app.config_logging as config_logging
 import comfy.options
 comfy.options.enable_args_parsing()
 from comfy.cli_args import args
-from app.logger import setup_logger
-setup_logger(verbose=args.verbose)
 
 import os
 import importlib.util

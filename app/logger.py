@@ -1,7 +1,7 @@
 import logging
 from logging.handlers import MemoryHandler
 from collections import deque
-import app.config_logging as config_logging
+
 logs = True
 formatter = logging.Formatter("%(asctime)s - %(name)s - %(levelname)s - %(message)s")
 
