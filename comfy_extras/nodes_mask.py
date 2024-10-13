@@ -2,7 +2,8 @@ import numpy as np
 import scipy.ndimage
 import torch
 import comfy.utils
-
+import logging
+logger = logging.getLogger(__file__)
 from nodes import MAX_RESOLUTION
 
 def composite(destination, source, x, y, mask = None, multiplier = 8, resize_source = False):
@@ -17,7 +18,7 @@ def composite(destination, source, x, y, mask = None, multiplier = 8, resize_sou
 
     left, top = (x // multiplier, y // multiplier)
     right, bottom = (left + source.shape[3], top + source.shape[2],)
-
+    logger.debug("before mask operation")
     if mask is None:
         mask = torch.ones_like(source)
     else:
@@ -31,12 +32,20 @@ def composite(destination, source, x, y, mask = None, multiplier = 8, resize_sou
     visible_width, visible_height = (destination.shape[3] - left + min(0, x), destination.shape[2] - top + min(0, y),)
 
     mask = mask[:, :, :visible_height, :visible_width]
-    inverse_mask = torch.ones_like(mask) - mask
+    # inverse_mask = torch.ones_like(mask) - mask
 
-    source_portion = mask * source[:, :, :visible_height, :visible_width]
-    destination_portion = inverse_mask  * destination[:, :, top:bottom, left:right]
+    # source_portion = mask * source[:, :, :visible_height, :visible_width]
+    # destination_portion = inverse_mask  * destination[:, :, top:bottom, left:right]
 
-    destination[:, :, top:bottom, left:right] = source_portion + destination_portion
+    # destination[:, :, top:bottom, left:right] = source_portion + destination_portion
+    logger.debug("start composite...")
+    dest_portion = destination[:, :, top:bottom, left:right]
+    source_portion = source[:, :, :visible_height, :visible_width]
+    logger.debug("after cat portion, should be view...")
+    # 使用 in-place 操作
+    dest_portion.mul_(1 - mask)  # 应用 inverse mask
+    logger.debug("finish dest_portion.mul_(1 - mask)")
+    dest_portion.add_(source_portion * mask)  # 添加 source 部分
     return destination
 
 class LatentCompositeMasked:
