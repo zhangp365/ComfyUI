@@ -17,6 +17,9 @@ class LoggerWriter:
         self.last_message = None
         self.in_recursion = False
 
+    def isatty(self):
+        return True
+
     def write(self, message):
         if self.in_recursion:
             return
