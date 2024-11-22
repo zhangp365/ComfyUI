@@ -867,7 +867,7 @@ def validate_prompt(prompt):
 
     return (True, None, list(good_outputs), node_errors)
 
-MAXIMUM_HISTORY_SIZE = 10000
+MAXIMUM_HISTORY_SIZE = 200
 
 class PromptQueue:
     def __init__(self, server):
