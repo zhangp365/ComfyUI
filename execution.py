@@ -17,6 +17,7 @@ logger = logging.getLogger(__file__)
 from comfy_execution.graph import get_input_info, ExecutionList, DynamicPrompt, ExecutionBlocker
 from comfy_execution.graph_utils import is_link, GraphBuilder
 from comfy_execution.caching import HierarchicalCache, LRUCache, CacheKeySetInputSignature, CacheKeySetID
+from comfy_execution.validation import validate_node_input
 from comfy.cli_args import args
 
 class ExecutionResult(Enum):
@@ -483,7 +484,7 @@ class PromptExecutor:
                 if self.caches.outputs.get(node_id) is not None:
                     cached_nodes.append(node_id)
 
-            comfy.model_management.cleanup_models(keep_clone_weights_loaded=True)
+            comfy.model_management.cleanup_models_gc()
             logger.debug("PromptExecutor start, finished cleanup models, start to add_message to ui.")
             self.add_message("execution_cached",
                           { "nodes": cached_nodes, "prompt_id": prompt_id},
@@ -529,7 +530,6 @@ class PromptExecutor:
             self.server.last_node_id = None
             if comfy.model_management.DISABLE_SMART_MEMORY:
                 comfy.model_management.unload_all_models()
-
 
 
 def validate_inputs(prompt, item, validated):
@@ -593,8 +593,8 @@ def validate_inputs(prompt, item, validated):
             r = nodes.NODE_CLASS_MAPPINGS[o_class_type].RETURN_TYPES
             received_type = r[val[1]]
             received_types[x] = received_type
-            if 'input_types' not in validate_function_inputs and received_type != type_input:
-                details = f"{x}, {received_type} != {type_input}"
+            if 'input_types' not in validate_function_inputs and not validate_node_input(received_type, type_input):
+                details = f"{x}, received_type({received_type}) mismatch input_type({type_input})"
                 error = {
                     "type": "return_type_mismatch",
                     "message": "Return type mismatch between linked nodes",
