@@ -12,6 +12,7 @@ from .ldm.audio.autoencoder import AudioOobleckVAE
 import comfy.ldm.genmo.vae.model
 import comfy.ldm.lightricks.vae.causal_video_autoencoder
 import yaml
+import math
 
 import comfy.utils
 
@@ -26,6 +27,7 @@ import comfy.text_encoders.sd2_clip
 import comfy.text_encoders.sd3_clip
 import comfy.text_encoders.sa_t5
 import comfy.text_encoders.aura_t5
+import comfy.text_encoders.pixart_t5
 import comfy.text_encoders.hydit
 import comfy.text_encoders.flux
 import comfy.text_encoders.long_clipl
@@ -336,23 +338,29 @@ class VAE:
                 self.memory_used_decode = lambda shape, dtype: (1000 * shape[2] * shape[3] * shape[4] * (6 * 8 * 8)) * model_management.dtype_size(dtype)
                 self.memory_used_encode = lambda shape, dtype: (1.5 * max(shape[2], 7) * shape[3] * shape[4] * (6 * 8 * 8)) * model_management.dtype_size(dtype)
                 self.upscale_ratio = (lambda a: max(0, a * 6 - 5), 8, 8)
-                self.downscale_ratio = (lambda a: max(0, (a + 3) / 6), 8, 8)
+                self.downscale_ratio = (lambda a: max(0, math.floor((a + 5) / 6)), 8, 8)
                 self.working_dtypes = [torch.float16, torch.float32]
             elif "decoder.up_blocks.0.res_blocks.0.conv1.conv.weight" in sd: #lightricks ltxv
-                self.first_stage_model = comfy.ldm.lightricks.vae.causal_video_autoencoder.VideoVAE()
+                tensor_conv1 = sd["decoder.up_blocks.0.res_blocks.0.conv1.conv.weight"]
+                version = 0
+                if tensor_conv1.shape[0] == 512:
+                    version = 0
+                elif tensor_conv1.shape[0] == 1024:
+                    version = 1
+                self.first_stage_model = comfy.ldm.lightricks.vae.causal_video_autoencoder.VideoVAE(version=version)
                 self.latent_channels = 128
                 self.latent_dim = 3
                 self.memory_used_decode = lambda shape, dtype: (900 * shape[2] * shape[3] * shape[4] * (8 * 8 * 8)) * model_management.dtype_size(dtype)
                 self.memory_used_encode = lambda shape, dtype: (70 * max(shape[2], 7) * shape[3] * shape[4]) * model_management.dtype_size(dtype)
                 self.upscale_ratio = (lambda a: max(0, a * 8 - 7), 32, 32)
-                self.downscale_ratio = (lambda a: max(0, (a + 4) / 8), 32, 32)
+                self.downscale_ratio = (lambda a: max(0, math.floor((a + 7) / 8)), 32, 32)
                 self.working_dtypes = [torch.bfloat16, torch.float32]
             elif "decoder.conv_in.conv.weight" in sd:
                 ddconfig = {'double_z': True, 'z_channels': 4, 'resolution': 256, 'in_channels': 3, 'out_ch': 3, 'ch': 128, 'ch_mult': [1, 2, 4, 4], 'num_res_blocks': 2, 'attn_resolutions': [], 'dropout': 0.0}
                 ddconfig["conv3d"] = True
                 ddconfig["time_compress"] = 4
                 self.upscale_ratio = (lambda a: max(0, a * 4 - 3), 8, 8)
-                self.downscale_ratio = (lambda a: max(0, (a + 2) / 4), 8, 8)
+                self.downscale_ratio = (lambda a: max(0, math.floor((a + 3) / 4)), 8, 8)
                 self.latent_dim = 3
                 self.latent_channels = ddconfig['z_channels'] = sd["decoder.conv_in.conv.weight"].shape[1]
                 self.first_stage_model = AutoencoderKL(ddconfig=ddconfig, embed_dim=sd['post_quant_conv.weight'].shape[1])
@@ -598,6 +606,8 @@ class CLIPType(Enum):
     MOCHI = 7
     LTXV = 8
     HUNYUAN_VIDEO = 9
+    PIXART = 10
+
 
 def load_clip(ckpt_paths, embedding_directory=None, clip_type=CLIPType.STABLE_DIFFUSION, model_options={}):
     clip_data = []
@@ -690,6 +700,9 @@ def load_text_encoder_state_dicts(state_dicts=[], embedding_directory=None, clip
             elif clip_type == CLIPType.LTXV:
                 clip_target.clip = comfy.text_encoders.lt.ltxv_te(**t5xxl_detect(clip_data))
                 clip_target.tokenizer = comfy.text_encoders.lt.LTXVT5Tokenizer
+            elif clip_type == CLIPType.PIXART:
+                clip_target.clip = comfy.text_encoders.pixart_t5.pixart_te(**t5xxl_detect(clip_data))
+                clip_target.tokenizer = comfy.text_encoders.pixart_t5.PixArtTokenizer
             else: #CLIPType.MOCHI
                 clip_target.clip = comfy.text_encoders.genmo.mochi_te(**t5xxl_detect(clip_data))
                 clip_target.tokenizer = comfy.text_encoders.genmo.MochiT5Tokenizer
@@ -928,11 +941,11 @@ def load_diffusion_model(unet_path, model_options={}):
     return model
 
 def load_unet(unet_path, dtype=None):
-    print("WARNING: the load_unet function has been deprecated and will be removed please switch to: load_diffusion_model")
+    logging.warning("The load_unet function has been deprecated and will be removed please switch to: load_diffusion_model")
     return load_diffusion_model(unet_path, model_options={"dtype": dtype})
 
 def load_unet_state_dict(sd, dtype=None):
-    print("WARNING: the load_unet_state_dict function has been deprecated and will be removed please switch to: load_diffusion_model_state_dict")
+    logging.warning("The load_unet_state_dict function has been deprecated and will be removed please switch to: load_diffusion_model_state_dict")
     return load_diffusion_model_state_dict(sd, model_options={"dtype": dtype})
 
 def save_checkpoint(output_path, model, clip=None, vae=None, clip_vision=None, metadata=None, extra_keys={}):
