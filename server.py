@@ -753,6 +753,7 @@ class PromptServer():
                 if valid[0]:
                     prompt_id = str(json_data.get("prompt_id", uuid.uuid4()))
                     ConnectCache.delete_item(prompt_id)
+                    logger.info(f"excute_sampling_task params put in cache: {params.keys()}")
                     for key, value in params.items():
                         ConnectCache.put_subitem(prompt_id, key, value)
 
