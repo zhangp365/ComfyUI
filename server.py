@@ -714,37 +714,21 @@ class PromptServer():
                     self.prompt_queue.delete_history_item(id_to_delete)
 
             return web.Response(status=200)
+  
 
-        
         @routes.post("/excute_sampling_task")
         async def excute_sampling_task(request):
             logger.info("start excute_sampling_task")
             
             reader = await request.multipart()
-            json_data = {}
-            positive = None
-            negative = None
-
-            async for part in reader:
-                if part.name == 'json_data':
-                    json_data = json.loads(await part.text())
-                elif part.name == 'positive':
-                    positive = await part.read()
-                    positive = bytes2Tensor(positive)
-                elif part.name == 'negative':
-                    negative = await part.read()
-                    negative = bytes2Tensor(negative)
-
-            if not json_data:
-                return web.json_response({"error": "Missing JSON data"}, status=400)
             
-            if positive is None:
-                return web.json_response({"error": "Missing positive data"}, status=400)
-            
-            if negative is None:
-                return web.json_response({"error": "Missing negative data"}, status=400)
-            
-            json_data = self.trigger_on_prompt(json_data)
+            try:
+                params = await process_multipart(reader)
+            except ValueError as e:
+                logger.error(str(e))
+                return web.json_response({"error": str(e), "node_errors": []}, status=400)
+                    
+            json_data = self.trigger_on_prompt(params.pop('json_data'))
             
             queue_limit = json_data.get("queue_limit", 5)
             current_queue = self.prompt_queue.get_current_queue()
@@ -769,10 +753,8 @@ class PromptServer():
                 if valid[0]:
                     prompt_id = str(json_data.get("prompt_id", uuid.uuid4()))
                     ConnectCache.delete_item(prompt_id)
-                    if positive is not None:
-                        ConnectCache.put_subitem(prompt_id, "positive", positive)
-                    if negative is not None:
-                        ConnectCache.put_subitem(prompt_id, "negative", negative)
+                    for key, value in params.items():
+                        ConnectCache.put_subitem(prompt_id, key, value)
 
                     outputs_to_execute = valid[2]
                     logger.info(f"Prompt id: {prompt_id} start to queue.")
@@ -815,6 +797,56 @@ class PromptServer():
             else:
                 return web.json_response({"error": "No prompt provided", "node_errors": []}, status=400)
 
+        def analyze_workflow_params(json_data):
+            """分析工作流参数需求
+            
+            Args:
+                json_data: 工作流JSON数据
+                
+            Returns:
+                required_params: 需要验证的参数列表
+            """
+            required_params = {'json_data'}  # json_data 始终是必需的
+            
+            for node_data in json_data.values():
+                if 'class_type' not in node_data:
+                    continue
+                    
+                class_type = node_data['class_type']
+                if class_type == 'LoadPositiveAndNegativeFromCache':
+                    required_params.add('positive')
+                    required_params.add('negative')
+                elif class_type == 'LoadPulidEmbeddingsFromCache':
+                    required_params.add('id_embedding')
+                    required_params.add('uncond_id_embedding')
+                    
+            return required_params
+
+        # 主要读取逻辑
+        async def process_multipart(reader):
+            params = {}
+            json_data = None
+            
+            # 首先读取所有部分
+            async for part in reader:
+                if part.name == 'json_data':
+                    json_data = json.loads(await part.text())
+                    params['json_data'] = json_data
+                else:
+                    content = await part.read()
+                    params[part.name] = bytes2Tensor(content)
+            
+            if not json_data:
+                raise ValueError("Missing required json_data")
+                
+            # 验证所需参数
+            required_params = analyze_workflow_params(json_data)
+            missing_params = required_params - set(params.keys())
+            
+            if missing_params:
+                raise ValueError(f"Missing required parameters: {missing_params}")
+                
+            return params
 
     async def setup(self):
         timeout = aiohttp.ClientTimeout(total=None) # no timeout
