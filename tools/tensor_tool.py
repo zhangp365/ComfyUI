@@ -9,4 +9,4 @@ def tensor2Bytes(image):
     return buffer
 
 def bytes2Tensor(bytes):
-    return torch.load(BytesIO(bytes))
+    return torch.load(BytesIO(bytes), map_location="cpu")
