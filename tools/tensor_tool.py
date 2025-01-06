@@ -4,7 +4,7 @@ from io import BytesIO
 
 def tensor2Bytes(image):
     buffer = BytesIO()
-    torch.save(image, buffer)
+    torch.save(image.cpu(), buffer)
     buffer.seek(0)
     return buffer
 
