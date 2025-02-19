@@ -1780,6 +1780,36 @@ class LoadImageMask:
 
         return True
 
+
+class LoadImageOutput(LoadImage):
+    @classmethod
+    def INPUT_TYPES(s):
+        return {
+            "required": {
+                "image": ("COMBO", {
+                    "image_upload": True,
+                    "image_folder": "output",
+                    "remote": {
+                        "route": "/internal/files/output",
+                        "refresh_button": True,
+                        "control_after_refresh": "first",
+                    },
+                }),
+            }
+        }
+
+    DESCRIPTION = "Load an image from the output folder. When the refresh button is clicked, the node will update the image list and automatically select the first image, allowing for easy iteration."
+    EXPERIMENTAL = True
+    FUNCTION = "load_image_output"
+
+    def load_image_output(self, image):
+        return self.load_image(f"{image} [output]")
+
+    @classmethod
+    def VALIDATE_INPUTS(s, image):
+        return True
+
+
 class ImageScale:
     upscale_methods = ["nearest-exact", "bilinear", "area", "bicubic", "lanczos"]
     crop_methods = ["disabled", "center"]
@@ -1966,6 +1996,7 @@ NODE_CLASS_MAPPINGS = {
     "PreviewImage": PreviewImage,
     "LoadImage": LoadImage,
     "LoadImageMask": LoadImageMask,
+    "LoadImageOutput": LoadImageOutput,
     "ImageScale": ImageScale,
     "ImageScaleBy": ImageScaleBy,
     "ImageInvert": ImageInvert,
@@ -2066,6 +2097,7 @@ NODE_DISPLAY_NAME_MAPPINGS = {
     "PreviewImage": "Preview Image",
     "LoadImage": "Load Image",
     "LoadImageMask": "Load Image (as Mask)",
+    "LoadImageOutput": "Load Image (from Outputs)",
     "ImageScale": "Upscale Image",
     "ImageScaleBy": "Upscale Image By",
     "ImageUpscaleWithModel": "Upscale Image (using Model)",
