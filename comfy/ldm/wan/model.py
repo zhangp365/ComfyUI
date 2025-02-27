@@ -9,38 +9,22 @@ from einops import repeat
 from comfy.ldm.modules.attention import optimized_attention
 from comfy.ldm.flux.layers import EmbedND
 from comfy.ldm.flux.math import apply_rope
+from comfy.ldm.modules.diffusionmodules.mmdit import RMSNorm
 import comfy.ldm.common_dit
+import comfy.model_management
+
 
 def sinusoidal_embedding_1d(dim, position):
     # preprocess
     assert dim % 2 == 0
     half = dim // 2
-    position = position.type(torch.float64)
+    position = position.type(torch.float32)
 
     # calculation
     sinusoid = torch.outer(
         position, torch.pow(10000, -torch.arange(half).to(position).div(half)))
     x = torch.cat([torch.cos(sinusoid), torch.sin(sinusoid)], dim=1)
     return x
-
-
-class WanRMSNorm(nn.Module):
-
-    def __init__(self, dim, eps=1e-5, device=None, dtype=None):
-        super().__init__()
-        self.dim = dim
-        self.eps = eps
-        self.weight = nn.Parameter(torch.ones(dim, device=device, dtype=dtype))
-
-    def forward(self, x):
-        r"""
-        Args:
-            x(Tensor): Shape [B, L, C]
-        """
-        return self._norm(x.float()).type_as(x) * self.weight
-
-    def _norm(self, x):
-        return x * torch.rsqrt(x.pow(2).mean(dim=-1, keepdim=True) + self.eps)
 
 
 class WanSelfAttention(nn.Module):
@@ -65,8 +49,8 @@ class WanSelfAttention(nn.Module):
         self.k = operation_settings.get("operations").Linear(dim, dim, device=operation_settings.get("device"), dtype=operation_settings.get("dtype"))
         self.v = operation_settings.get("operations").Linear(dim, dim, device=operation_settings.get("device"), dtype=operation_settings.get("dtype"))
         self.o = operation_settings.get("operations").Linear(dim, dim, device=operation_settings.get("device"), dtype=operation_settings.get("dtype"))
-        self.norm_q = WanRMSNorm(dim, eps=eps, device=operation_settings.get("device"), dtype=operation_settings.get("dtype")) if qk_norm else nn.Identity()
-        self.norm_k = WanRMSNorm(dim, eps=eps, device=operation_settings.get("device"), dtype=operation_settings.get("dtype")) if qk_norm else nn.Identity()
+        self.norm_q = RMSNorm(dim, eps=eps, elementwise_affine=True, device=operation_settings.get("device"), dtype=operation_settings.get("dtype")) if qk_norm else nn.Identity()
+        self.norm_k = RMSNorm(dim, eps=eps, elementwise_affine=True, device=operation_settings.get("device"), dtype=operation_settings.get("dtype")) if qk_norm else nn.Identity()
 
     def forward(self, x, freqs):
         r"""
@@ -125,12 +109,12 @@ class WanI2VCrossAttention(WanSelfAttention):
                  window_size=(-1, -1),
                  qk_norm=True,
                  eps=1e-6, operation_settings={}):
-        super().__init__(dim, num_heads, window_size, qk_norm, eps)
+        super().__init__(dim, num_heads, window_size, qk_norm, eps, operation_settings=operation_settings)
 
         self.k_img = operation_settings.get("operations").Linear(dim, dim, device=operation_settings.get("device"), dtype=operation_settings.get("dtype"))
         self.v_img = operation_settings.get("operations").Linear(dim, dim, device=operation_settings.get("device"), dtype=operation_settings.get("dtype"))
         # self.alpha = nn.Parameter(torch.zeros((1, )))
-        self.norm_k_img = WanRMSNorm(dim, eps=eps, device=operation_settings.get("device"), dtype=operation_settings.get("dtype")) if qk_norm else nn.Identity()
+        self.norm_k_img = RMSNorm(dim, eps=eps, elementwise_affine=True, device=operation_settings.get("device"), dtype=operation_settings.get("dtype")) if qk_norm else nn.Identity()
 
     def forward(self, x, context):
         r"""
@@ -218,7 +202,7 @@ class WanAttentionBlock(nn.Module):
         """
         # assert e.dtype == torch.float32
 
-        e = (self.modulation + e).chunk(6, dim=1)
+        e = (comfy.model_management.cast_to(self.modulation, dtype=x.dtype, device=x.device) + e).chunk(6, dim=1)
         # assert e[0].dtype == torch.float32
 
         # self-attention
@@ -263,7 +247,7 @@ class Head(nn.Module):
             e(Tensor): Shape [B, C]
         """
         # assert e.dtype == torch.float32
-        e = (self.modulation + e.unsqueeze(1)).chunk(2, dim=1)
+        e = (comfy.model_management.cast_to(self.modulation, dtype=x.dtype, device=x.device) + e.unsqueeze(1)).chunk(2, dim=1)
         x = (self.head(self.norm(x) * (1 + e[1]) + e[0]))
         return x
 
@@ -369,7 +353,7 @@ class WanModel(torch.nn.Module):
 
         # embeddings
         self.patch_embedding = operations.Conv3d(
-            in_dim, dim, kernel_size=patch_size, stride=patch_size, device=operation_settings.get("device"), dtype=operation_settings.get("dtype"))
+            in_dim, dim, kernel_size=patch_size, stride=patch_size, device=operation_settings.get("device"), dtype=torch.float32)
         self.text_embedding = nn.Sequential(
             operations.Linear(text_dim, dim, device=operation_settings.get("device"), dtype=operation_settings.get("dtype")), nn.GELU(approximate='tanh'),
             operations.Linear(dim, dim, device=operation_settings.get("device"), dtype=operation_settings.get("dtype")))
@@ -394,6 +378,8 @@ class WanModel(torch.nn.Module):
 
         if model_type == 'i2v':
             self.img_emb = MLPProj(1280, dim, operation_settings=operation_settings)
+        else:
+            self.img_emb = None
 
     def forward_orig(
         self,
@@ -401,7 +387,6 @@ class WanModel(torch.nn.Module):
         t,
         context,
         clip_fea=None,
-        y=None,
         freqs=None,
     ):
         r"""
@@ -425,14 +410,8 @@ class WanModel(torch.nn.Module):
             List[Tensor]:
                 List of denoised video tensors with original input shapes [C_out, F, H / 8, W / 8]
         """
-        if self.model_type == 'i2v':
-            assert clip_fea is not None and y is not None
-
-        if y is not None:
-            x = torch.cat([x, y], dim=0)
-
         # embeddings
-        x = self.patch_embedding(x)
+        x = self.patch_embedding(x.float()).to(x.dtype)
         grid_sizes = x.shape[2:]
         x = x.flatten(2).transpose(1, 2)
 
@@ -444,7 +423,7 @@ class WanModel(torch.nn.Module):
         # context
         context = self.text_embedding(torch.cat([context, context.new_zeros(context.size(0), self.text_len - context.size(1), context.size(2))], dim=1))
 
-        if clip_fea is not None:
+        if clip_fea is not None and self.img_emb is not None:
             context_clip = self.img_emb(clip_fea)  # bs x 257 x dim
             context = torch.concat([context_clip, context], dim=1)
 
@@ -465,7 +444,7 @@ class WanModel(torch.nn.Module):
         return x
         # return [u.float() for u in x]
 
-    def forward(self, x, timestep, context, y=None, image=None, **kwargs):
+    def forward(self, x, timestep, context, clip_fea=None, **kwargs):
         bs, c, t, h, w = x.shape
         x = comfy.ldm.common_dit.pad_to_patch_size(x, self.patch_size)
         patch_size = self.patch_size
@@ -479,7 +458,7 @@ class WanModel(torch.nn.Module):
         img_ids = repeat(img_ids, "t h w c -> b (t h w) c", b=bs)
 
         freqs = self.rope_embedder(img_ids).movedim(1, 2)
-        return self.forward_orig(x, timestep, context, clip_fea=y, y=image, freqs=freqs)[:, :, :t, :h, :w]
+        return self.forward_orig(x, timestep, context, clip_fea=clip_fea, freqs=freqs)[:, :, :t, :h, :w]
 
     def unpatchify(self, x, grid_sizes):
         r"""
