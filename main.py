@@ -142,6 +142,7 @@ from server import BinaryEventTypes
 import nodes
 import comfy.model_management
 import comfyui_version
+import app.logger
 
 
 def cuda_malloc_warning():
@@ -305,6 +306,7 @@ if __name__ == "__main__":
     event_loop, _, start_all_func = start_comfyui()
     try:
         x = start_all_func()
+        app.logger.print_startup_warnings()
         event_loop.run_until_complete(x)
     except KeyboardInterrupt:
         logging.info("\nStopped server")
