@@ -31,6 +31,8 @@ start.bat
 logs
 *.jpg
 config/gender_words_config.yaml
+config/prompt_cache_gemini.yml
+config/gemini_config.yml
 *.pem
 
 .github/workflows/stable-release.yml
