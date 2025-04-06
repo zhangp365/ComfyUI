@@ -4,6 +4,8 @@ import torch
 import comfy.utils
 import logging
 logger = logging.getLogger(__file__)
+import node_helpers
+
 from nodes import MAX_RESOLUTION
 
 def composite(destination, source, x, y, mask = None, multiplier = 8, resize_source = False):
@@ -96,11 +98,7 @@ class ImageCompositeMasked:
     CATEGORY = "image"
 
     def composite(self, destination, source, x, y, resize_source, mask = None):
-        if destination.shape[-1] < source.shape[-1]:
-            source = source[...,:destination.shape[-1]]
-        elif destination.shape[-1] > source.shape[-1]:
-            destination = torch.nn.functional.pad(destination, (0, 1))
-            destination[..., -1] = source[..., -1]
+        destination, source = node_helpers.image_alpha_fix(destination, source)
         destination = destination.clone().movedim(-1, 1)
         output = composite(destination, source.movedim(-1, 1), x, y, mask, 1, resize_source).movedim(1, -1)
         return (output,)
