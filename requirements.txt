@@ -24,4 +24,4 @@ kornia>=0.7.1
 opencv-python
 spandrel
 soundfile
-av
+av>=14.1.0
