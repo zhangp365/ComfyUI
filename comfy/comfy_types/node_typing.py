@@ -1,7 +1,7 @@
 """Comfy-specific type hinting"""
 
 from __future__ import annotations
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, Optional
 from typing_extensions import NotRequired
 from abc import ABC, abstractmethod
 from enum import Enum
@@ -120,6 +120,10 @@ class InputTypeOptions(TypedDict):
     Available from frontend v1.17.5
     Ref: https://github.com/Comfy-Org/ComfyUI_frontend/pull/3548
     """
+    widgetType: NotRequired[str]
+    """Specifies a type to be used for widget initialization if different from the input type.
+    Available from frontend v1.18.0
+    https://github.com/Comfy-Org/ComfyUI_frontend/pull/3550"""
     # class InputTypeNumber(InputTypeOptions):
     # default: float | int
     min: NotRequired[float]
@@ -229,6 +233,8 @@ class ComfyNodeABC(ABC):
     """Flags a node as experimental, informing users that it may change or not work as expected."""
     DEPRECATED: bool
     """Flags a node as deprecated, indicating to users that they should find alternatives to this node."""
+    API_NODE: Optional[bool]
+    """Flags a node as an API node."""
 
     @classmethod
     @abstractmethod
