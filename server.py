@@ -32,6 +32,7 @@ from comfy_api import feature_flags
 import node_helpers
 from comfyui_version import __version__
 from app.frontend_management import FrontendManager
+from comfy_api.internal import _ComfyNodeInternal
 
 from app.user_manager import UserManager
 from app.model_manager import ModelFileManager
@@ -577,6 +578,7 @@ class PromptServer():
             ram_free = comfy.model_management.get_free_memory(cpu_device)
             vram_total, torch_vram_total = comfy.model_management.get_total_memory(device, torch_total_too=True)
             vram_free, torch_vram_free = comfy.model_management.get_free_memory(device, torch_free_too=True)
+            required_frontend_version = FrontendManager.get_required_frontend_version()
 
             system_stats = {
                 "system": {
@@ -584,6 +586,7 @@ class PromptServer():
                     "ram_total": ram_total,
                     "ram_free": ram_free,
                     "comfyui_version": __version__,
+                    "required_frontend_version": required_frontend_version,
                     "python_version": sys.version,
                     "pytorch_version": comfy.model_management.torch_version,
                     "embedded_python": os.path.split(os.path.split(sys.executable)[0])[1] == "python_embeded",
@@ -613,6 +616,8 @@ class PromptServer():
 
         def node_info(node_class):
             obj_class = nodes.NODE_CLASS_MAPPINGS[node_class]
+            if issubclass(obj_class, _ComfyNodeInternal):
+                return obj_class.GET_NODE_INFO_V1()
             info = {}
             info['input'] = obj_class.INPUT_TYPES()
             info['input_order'] = {key: list(value.keys()) for (key, value) in obj_class.INPUT_TYPES().items()}
@@ -703,7 +708,12 @@ class PromptServer():
             if "prompt" in json_data:
                 prompt = json_data["prompt"]
                 prompt_id = str(json_data.get("prompt_id", uuid.uuid4()))
-                valid = await execution.validate_prompt(prompt_id, prompt)
+
+                partial_execution_targets = None
+                if "partial_execution_targets" in json_data:
+                    partial_execution_targets = json_data["partial_execution_targets"]
+
+                valid = await execution.validate_prompt(prompt_id, prompt, partial_execution_targets)
                 extra_data = {}
                 if "extra_data" in json_data:
                     extra_data = json_data["extra_data"]
