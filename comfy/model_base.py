@@ -1437,6 +1437,7 @@ class HunyuanImage21Refiner(HunyuanImage21):
     def concat_cond(self, **kwargs):
         noise = kwargs.get("noise", None)
         image = kwargs.get("concat_latent_image", None)
+        noise_augmentation = kwargs.get("noise_augmentation", 0.0)
         device = kwargs["device"]
 
         if image is None:
@@ -1446,6 +1447,13 @@ class HunyuanImage21Refiner(HunyuanImage21):
             image = utils.common_upscale(image.to(device), noise.shape[-1], noise.shape[-2], "bilinear", "center")
             image = self.process_latent_in(image)
             image = utils.resize_to_batch_size(image, noise.shape[0])
+            if noise_augmentation > 0:
+                generator = torch.Generator(device="cpu")
+                generator.manual_seed(kwargs.get("seed", 0) - 10)
+                noise = torch.randn(image.shape, generator=generator, dtype=image.dtype, device="cpu").to(image.device)
+                image = noise_augmentation * noise + min(1.0 - noise_augmentation, 0.75) * image
+            else:
+                image = 0.75 * image
         return image
 
     def extra_conds(self, **kwargs):
