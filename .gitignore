@@ -33,6 +33,11 @@ logs
 config/gender_words_config.yaml
 config/prompt_cache_gemini.yml
 config/gemini_config.yml
+config/fal_config.yml
+config/novita_config.yml
+config/segmind_config.yml
+config/volcano_config.yml
+config/replicate_config.yml
 *.pem
 
 .github/workflows/stable-release.yml
