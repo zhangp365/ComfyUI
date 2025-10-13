@@ -77,7 +77,7 @@ class ImageUpscaleWithModel(io.ComfyNode):
         in_img = image.movedim(-1,-3).to(device)
         free_memory = model_management.get_free_memory(device)
         logger.debug("after model_management.get_free_memory")
-        tile = tile_size if tile_size else 512
+        tile = 512
         overlap = 32
 
         oom = True
