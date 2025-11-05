@@ -2346,6 +2346,7 @@ async def init_builtin_extra_nodes():
         "nodes_model_patch.py",
         "nodes_easycache.py",
         "nodes_audio_encoder.py",
+        "nodes_rope.py",
     ]
 
     import_failed = []
@@ -2366,6 +2367,7 @@ async def init_builtin_api_nodes():
         "nodes_kling.py",
         "nodes_bfl.py",
         "nodes_bytedance.py",
+        "nodes_ltxv.py",
         "nodes_luma.py",
         "nodes_recraft.py",
         "nodes_pixverse.py",
