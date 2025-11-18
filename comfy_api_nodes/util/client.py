@@ -882,12 +882,13 @@ def _validate_or_raise(response_model: Type[M], payload: Any) -> M:
         return response_model.model_validate(payload)
     except Exception as e:
         logging.error(
-            "Response validation failed for %s: %s",
+            "Response validation failed for %s: %s, payload: %s",
             getattr(response_model, "__name__", response_model),
             e,
+            payload,
         )
         raise Exception(
-            f"Response validation failed for {getattr(response_model, '__name__', response_model)}: {e}"
+            f"Response {payload} validation failed for {getattr(response_model, '__name__', response_model)}: {e}"
         ) from e
 
 
