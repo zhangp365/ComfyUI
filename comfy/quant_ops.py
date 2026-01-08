@@ -13,6 +13,14 @@ try:
         get_layout_class,
     )
     _CK_AVAILABLE = True
+    if torch.version.cuda is None:
+        ck.registry.disable("cuda")
+    else:
+        cuda_version = tuple(map(int, str(torch.version.cuda).split('.')))
+        if cuda_version < (13,):
+            ck.registry.disable("cuda")
+            logging.warning("WARNING: You need pytorch with cu130 or higher to use optimized CUDA operations.")
+
     ck.registry.disable("triton")
     for k, v in ck.list_backends().items():
         logging.info(f"Found comfy_kitchen backend {k}: {v}")
