@@ -568,7 +568,7 @@ def batch_latents(latents: list[dict[str, torch.Tensor]]) -> dict[str, torch.Ten
 class BatchImagesNode(io.ComfyNode):
     @classmethod
     def define_schema(cls):
-        autogrow_template = io.Autogrow.TemplatePrefix(io.Image.Input("image"), prefix="image", min=2, max=50)
+        autogrow_template = io.Autogrow.TemplatePrefix(io.Image.Input("image"), prefix="image", min=1, max=50)
         return io.Schema(
             node_id="BatchImagesNode",
             display_name="Batch Images",
@@ -590,7 +590,7 @@ class BatchImagesNode(io.ComfyNode):
 class BatchMasksNode(io.ComfyNode):
     @classmethod
     def define_schema(cls):
-        autogrow_template = io.Autogrow.TemplatePrefix(io.Mask.Input("mask"), prefix="mask", min=2, max=50)
+        autogrow_template = io.Autogrow.TemplatePrefix(io.Mask.Input("mask"), prefix="mask", min=1, max=50)
         return io.Schema(
             node_id="BatchMasksNode",
             search_aliases=["combine masks", "stack masks", "merge masks"],
@@ -611,7 +611,7 @@ class BatchMasksNode(io.ComfyNode):
 class BatchLatentsNode(io.ComfyNode):
     @classmethod
     def define_schema(cls):
-        autogrow_template = io.Autogrow.TemplatePrefix(io.Latent.Input("latent"), prefix="latent", min=2, max=50)
+        autogrow_template = io.Autogrow.TemplatePrefix(io.Latent.Input("latent"), prefix="latent", min=1, max=50)
         return io.Schema(
             node_id="BatchLatentsNode",
             search_aliases=["combine latents", "stack latents", "merge latents"],
