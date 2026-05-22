@@ -2342,16 +2342,27 @@ paths:
                     $ref: "#/components/schemas/AssetDownloadRequest"
                   description: Assets to download
       responses:
-        "200":
-          description: Download initiated
+        "202":
+          description: Download task accepted
           content:
             application/json:
               schema:
                 type: object
+                required:
+                  - task_id
+                  - status
                 properties:
                   task_id:
                     type: string
-                    description: Task ID for tracking progress via WebSocket
+                    format: uuid
+                    description: ID of the download task; use to poll status.
+                  status:
+                    type: string
+                    enum: [created, running, completed, failed]
+                    description: Current task status (typically `created` on initial creation).
+                  message:
+                    type: string
+                    description: Human-readable task message.
         "400":
           description: Bad request
           content:
@@ -2391,17 +2402,27 @@ paths:
                   type: string
                   description: Name for the export archive
       responses:
-        "200":
-          description: Export initiated
+        "202":
+          description: Export task accepted
           content:
             application/json:
               schema:
                 type: object
+                required:
+                  - task_id
+                  - status
                 properties:
                   task_id:
                     type: string
-                  export_name:
+                    format: uuid
+                    description: ID of the export task; use to poll status.
+                  status:
                     type: string
+                    enum: [created, running, completed, failed]
+                    description: Current task status (typically `created` on initial creation).
+                  message:
+                    type: string
+                    description: Human-readable task message.
         "400":
           description: Bad request
           content:
@@ -2476,8 +2497,8 @@ paths:
                     type: string
                   description: Tags to apply to the created assets
       responses:
-        "201":
-          description: Assets created
+        "200":
+          description: Assets created or referenced
           content:
             application/json:
               schema:
@@ -5056,7 +5077,7 @@ paths:
                   additionalProperties: true
                   description: Additional context metadata
       responses:
-        "200":
+        "201":
           description: Feedback submitted
           content:
             application/json:
@@ -6102,14 +6123,17 @@ components:
           type: string
           description: Current job status
         create_time:
-          type: number
-          description: Job creation timestamp
+          type: integer
+          format: int64
+          description: Job creation timestamp (Unix milliseconds).
         execution_start_time:
-          type: number
-          description: Workflow execution start timestamp
+          type: integer
+          format: int64
+          description: Workflow execution start timestamp (Unix milliseconds, terminal states only).
         execution_end_time:
-          type: number
-          description: Workflow execution end timestamp
+          type: integer
+          format: int64
+          description: Workflow execution end timestamp (Unix milliseconds, terminal states only).
         preview_output:
           type: object
           additionalProperties: true
@@ -6141,13 +6165,21 @@ components:
         execution_error:
           $ref: "#/components/schemas/ExecutionError"
         create_time:
-          type: number
+          type: integer
+          format: int64
+          description: Job creation timestamp (Unix milliseconds).
         update_time:
-          type: number
+          type: integer
+          format: int64
+          description: Last state-change timestamp (Unix milliseconds).
         execution_start_time:
-          type: number
+          type: integer
+          format: int64
+          description: Workflow execution start timestamp (Unix milliseconds, terminal states only).
         execution_end_time:
-          type: number
+          type: integer
+          format: int64
+          description: Workflow execution end timestamp (Unix milliseconds, terminal states only).
         preview_output:
           type: object
           additionalProperties: true
