@@ -47,3 +47,6 @@ test*.*
 filtered-openapi.yaml
 uv.lock
 .comfy_environment
+
+config/ark_config.yml
+config/civitai_config.yml

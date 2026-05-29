@@ -921,6 +921,12 @@ class PromptServer():
 
             return web.json_response(job)
 
+        def _get_history_response(self, history):
+            """Build JSON response from prompt history, clearing prompt values."""
+            for k in history:
+                history[k]["prompt"] = None
+            return web.json_response(history)
+
         @routes.get("/history")
         async def get_history(request):
             max_items = request.rel_url.query.get("max_items", None)
@@ -933,12 +939,14 @@ class PromptServer():
             else:
                 offset = -1
 
-            return web.json_response(self.prompt_queue.get_history(max_items=max_items, offset=offset))
+            history = self.prompt_queue.get_history(max_items=max_items, offset=offset)
+            return self._get_history_response(history)
 
         @routes.get("/history/{prompt_id}")
         async def get_history_prompt_id(request):
             prompt_id = request.match_info.get("prompt_id", None)
-            return web.json_response(self.prompt_queue.get_history(prompt_id=prompt_id))
+            history = self.prompt_queue.get_history(prompt_id=prompt_id)
+            return self._get_history_response(history)
 
         @routes.get("/queue")
         async def get_queue(request):
