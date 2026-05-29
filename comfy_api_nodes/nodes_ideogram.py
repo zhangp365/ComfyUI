@@ -234,7 +234,7 @@ class IdeogramV1(IO.ComfyNode):
         return IO.Schema(
             node_id="IdeogramV1",
             display_name="Ideogram V1",
-            category="api node/image/Ideogram",
+            category="image/partner/Ideogram",
             description="Generates images using the Ideogram V1 model.",
             inputs=[
                 IO.String.Input(
@@ -261,6 +261,7 @@ class IdeogramV1(IO.ComfyNode):
                     default="AUTO",
                     tooltip="Determine if MagicPrompt should be used in generation",
                     optional=True,
+                    advanced=True,
                 ),
                 IO.Int.Input(
                     "seed",
@@ -359,7 +360,7 @@ class IdeogramV2(IO.ComfyNode):
         return IO.Schema(
             node_id="IdeogramV2",
             display_name="Ideogram V2",
-            category="api node/image/Ideogram",
+            category="image/partner/Ideogram",
             description="Generates images using the Ideogram V2 model.",
             inputs=[
                 IO.String.Input(
@@ -394,6 +395,7 @@ class IdeogramV2(IO.ComfyNode):
                     default="AUTO",
                     tooltip="Determine if MagicPrompt should be used in generation",
                     optional=True,
+                    advanced=True,
                 ),
                 IO.Int.Input(
                     "seed",
@@ -411,6 +413,7 @@ class IdeogramV2(IO.ComfyNode):
                     default="NONE",
                     tooltip="Style type for generation (V2 only)",
                     optional=True,
+                    advanced=True,
                 ),
                 IO.String.Input(
                     "negative_prompt",
@@ -523,7 +526,7 @@ class IdeogramV3(IO.ComfyNode):
         return IO.Schema(
             node_id="IdeogramV3",
             display_name="Ideogram V3",
-            category="api node/image/Ideogram",
+            category="image/partner/Ideogram",
             description="Generates images using the Ideogram V3 model. "
                         "Supports both regular image generation from text prompts and image editing with mask.",
             inputs=[
@@ -564,6 +567,7 @@ class IdeogramV3(IO.ComfyNode):
                     default="AUTO",
                     tooltip="Determine if MagicPrompt should be used in generation",
                     optional=True,
+                    advanced=True,
                 ),
                 IO.Int.Input(
                     "seed",
@@ -590,6 +594,7 @@ class IdeogramV3(IO.ComfyNode):
                     default="DEFAULT",
                     tooltip="Controls the trade-off between generation speed and quality",
                     optional=True,
+                    advanced=True,
                 ),
                 IO.Image.Input(
                     "character_image",

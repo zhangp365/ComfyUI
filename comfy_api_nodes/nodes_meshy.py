@@ -1,5 +1,3 @@
-import os
-
 from typing_extensions import override
 
 from comfy_api.latest import IO, ComfyExtension, Input
@@ -20,13 +18,12 @@ from comfy_api_nodes.apis.meshy import (
 )
 from comfy_api_nodes.util import (
     ApiEndpoint,
-    download_url_to_bytesio,
+    download_url_to_file_3d,
     poll_op,
     sync_op,
     upload_images_to_comfyapi,
     validate_string,
 )
-from folder_paths import get_output_directory
 
 
 class MeshyTextToModelNode(IO.ComfyNode):
@@ -36,7 +33,7 @@ class MeshyTextToModelNode(IO.ComfyNode):
         return IO.Schema(
             node_id="MeshyTextToModelNode",
             display_name="Meshy: Text to Model",
-            category="api node/3d/Meshy",
+            category="3d/partner/Meshy",
             inputs=[
                 IO.Combo.Input("model", options=["latest"]),
                 IO.String.Input("prompt", multiline=True, default=""),
@@ -61,11 +58,12 @@ class MeshyTextToModelNode(IO.ComfyNode):
                     ],
                     tooltip="When set to false, returns an unprocessed triangular mesh.",
                 ),
-                IO.Combo.Input("symmetry_mode", options=["auto", "on", "off"]),
+                IO.Combo.Input("symmetry_mode", options=["auto", "on", "off"], advanced=True),
                 IO.Combo.Input(
                     "pose_mode",
                     options=["", "A-pose", "T-pose"],
                     tooltip="Specify the pose mode for the generated model.",
+                    advanced=True,
                 ),
                 IO.Int.Input(
                     "seed",
@@ -79,8 +77,10 @@ class MeshyTextToModelNode(IO.ComfyNode):
                 ),
             ],
             outputs=[
-                IO.String.Output(display_name="model_file"),
+                IO.String.Output(display_name="model_file"),  # for backward compatibility only
                 IO.Custom("MESHY_TASK_ID").Output(display_name="meshy_task_id"),
+                IO.File3DGLB.Output(display_name="GLB"),
+                IO.File3DFBX.Output(display_name="FBX"),
             ],
             hidden=[
                 IO.Hidden.auth_token_comfy_org,
@@ -122,16 +122,20 @@ class MeshyTextToModelNode(IO.ComfyNode):
                 seed=seed,
             ),
         )
+        task_id = response.result
         result = await poll_op(
             cls,
-            ApiEndpoint(path=f"/proxy/meshy/openapi/v2/text-to-3d/{response.result}"),
+            ApiEndpoint(path=f"/proxy/meshy/openapi/v2/text-to-3d/{task_id}"),
             response_model=MeshyModelResult,
             status_extractor=lambda r: r.status,
             progress_extractor=lambda r: r.progress,
         )
-        model_file = f"meshy_model_{response.result}.glb"
-        await download_url_to_bytesio(result.model_urls.glb, os.path.join(get_output_directory(), model_file))
-        return IO.NodeOutput(model_file, response.result)
+        return IO.NodeOutput(
+            f"{task_id}.glb",
+            task_id,
+            await download_url_to_file_3d(result.model_urls.glb, "glb", task_id=task_id),
+            await download_url_to_file_3d(result.model_urls.fbx, "fbx", task_id=task_id),
+        )
 
 
 class MeshyRefineNode(IO.ComfyNode):
@@ -141,7 +145,7 @@ class MeshyRefineNode(IO.ComfyNode):
         return IO.Schema(
             node_id="MeshyRefineNode",
             display_name="Meshy: Refine Draft Model",
-            category="api node/3d/Meshy",
+            category="3d/partner/Meshy",
             description="Refine a previously created draft model.",
             inputs=[
                 IO.Combo.Input("model", options=["latest"]),
@@ -152,6 +156,7 @@ class MeshyRefineNode(IO.ComfyNode):
                     tooltip="Generate PBR Maps (metallic, roughness, normal) in addition to the base color. "
                     "Note: this should be set to false when using Sculpture style, "
                     "as Sculpture style generates its own set of PBR maps.",
+                    advanced=True,
                 ),
                 IO.String.Input(
                     "texture_prompt",
@@ -167,8 +172,10 @@ class MeshyRefineNode(IO.ComfyNode):
                 ),
             ],
             outputs=[
-                IO.String.Output(display_name="model_file"),
+                IO.String.Output(display_name="model_file"),  # for backward compatibility only
                 IO.Custom("MESHY_TASK_ID").Output(display_name="meshy_task_id"),
+                IO.File3DGLB.Output(display_name="GLB"),
+                IO.File3DFBX.Output(display_name="FBX"),
             ],
             hidden=[
                 IO.Hidden.auth_token_comfy_org,
@@ -210,16 +217,20 @@ class MeshyRefineNode(IO.ComfyNode):
                 ai_model=model,
             ),
         )
+        task_id = response.result
         result = await poll_op(
             cls,
-            ApiEndpoint(path=f"/proxy/meshy/openapi/v2/text-to-3d/{response.result}"),
+            ApiEndpoint(path=f"/proxy/meshy/openapi/v2/text-to-3d/{task_id}"),
             response_model=MeshyModelResult,
             status_extractor=lambda r: r.status,
             progress_extractor=lambda r: r.progress,
         )
-        model_file = f"meshy_model_{response.result}.glb"
-        await download_url_to_bytesio(result.model_urls.glb, os.path.join(get_output_directory(), model_file))
-        return IO.NodeOutput(model_file, response.result)
+        return IO.NodeOutput(
+            f"{task_id}.glb",
+            task_id,
+            await download_url_to_file_3d(result.model_urls.glb, "glb", task_id=task_id),
+            await download_url_to_file_3d(result.model_urls.fbx, "fbx", task_id=task_id),
+        )
 
 
 class MeshyImageToModelNode(IO.ComfyNode):
@@ -229,7 +240,7 @@ class MeshyImageToModelNode(IO.ComfyNode):
         return IO.Schema(
             node_id="MeshyImageToModelNode",
             display_name="Meshy: Image to Model",
-            category="api node/3d/Meshy",
+            category="3d/partner/Meshy",
             inputs=[
                 IO.Combo.Input("model", options=["latest"]),
                 IO.Image.Input("image"),
@@ -290,6 +301,7 @@ class MeshyImageToModelNode(IO.ComfyNode):
                     "pose_mode",
                     options=["", "A-pose", "T-pose"],
                     tooltip="Specify the pose mode for the generated model.",
+                    advanced=True,
                 ),
                 IO.Int.Input(
                     "seed",
@@ -303,8 +315,10 @@ class MeshyImageToModelNode(IO.ComfyNode):
                 ),
             ],
             outputs=[
-                IO.String.Output(display_name="model_file"),
+                IO.String.Output(display_name="model_file"),  # for backward compatibility only
                 IO.Custom("MESHY_TASK_ID").Output(display_name="meshy_task_id"),
+                IO.File3DGLB.Output(display_name="GLB"),
+                IO.File3DFBX.Output(display_name="FBX"),
             ],
             hidden=[
                 IO.Hidden.auth_token_comfy_org,
@@ -368,16 +382,20 @@ class MeshyImageToModelNode(IO.ComfyNode):
                 seed=seed,
             ),
         )
+        task_id = response.result
         result = await poll_op(
             cls,
-            ApiEndpoint(path=f"/proxy/meshy/openapi/v1/image-to-3d/{response.result}"),
+            ApiEndpoint(path=f"/proxy/meshy/openapi/v1/image-to-3d/{task_id}"),
             response_model=MeshyModelResult,
             status_extractor=lambda r: r.status,
             progress_extractor=lambda r: r.progress,
         )
-        model_file = f"meshy_model_{response.result}.glb"
-        await download_url_to_bytesio(result.model_urls.glb, os.path.join(get_output_directory(), model_file))
-        return IO.NodeOutput(model_file, response.result)
+        return IO.NodeOutput(
+            f"{task_id}.glb",
+            task_id,
+            await download_url_to_file_3d(result.model_urls.glb, "glb", task_id=task_id),
+            await download_url_to_file_3d(result.model_urls.fbx, "fbx", task_id=task_id),
+        )
 
 
 class MeshyMultiImageToModelNode(IO.ComfyNode):
@@ -387,7 +405,7 @@ class MeshyMultiImageToModelNode(IO.ComfyNode):
         return IO.Schema(
             node_id="MeshyMultiImageToModelNode",
             display_name="Meshy: Multi-Image to Model",
-            category="api node/3d/Meshy",
+            category="3d/partner/Meshy",
             inputs=[
                 IO.Combo.Input("model", options=["latest"]),
                 IO.Autogrow.Input(
@@ -414,7 +432,7 @@ class MeshyMultiImageToModelNode(IO.ComfyNode):
                     ],
                     tooltip="When set to false, returns an unprocessed triangular mesh.",
                 ),
-                IO.Combo.Input("symmetry_mode", options=["auto", "on", "off"]),
+                IO.Combo.Input("symmetry_mode", options=["auto", "on", "off"], advanced=True),
                 IO.DynamicCombo.Input(
                     "should_texture",
                     options=[
@@ -451,6 +469,7 @@ class MeshyMultiImageToModelNode(IO.ComfyNode):
                     "pose_mode",
                     options=["", "A-pose", "T-pose"],
                     tooltip="Specify the pose mode for the generated model.",
+                    advanced=True,
                 ),
                 IO.Int.Input(
                     "seed",
@@ -464,8 +483,10 @@ class MeshyMultiImageToModelNode(IO.ComfyNode):
                 ),
             ],
             outputs=[
-                IO.String.Output(display_name="model_file"),
+                IO.String.Output(display_name="model_file"),  # for backward compatibility only
                 IO.Custom("MESHY_TASK_ID").Output(display_name="meshy_task_id"),
+                IO.File3DGLB.Output(display_name="GLB"),
+                IO.File3DFBX.Output(display_name="FBX"),
             ],
             hidden=[
                 IO.Hidden.auth_token_comfy_org,
@@ -531,16 +552,20 @@ class MeshyMultiImageToModelNode(IO.ComfyNode):
                 seed=seed,
             ),
         )
+        task_id = response.result
         result = await poll_op(
             cls,
-            ApiEndpoint(path=f"/proxy/meshy/openapi/v1/multi-image-to-3d/{response.result}"),
+            ApiEndpoint(path=f"/proxy/meshy/openapi/v1/multi-image-to-3d/{task_id}"),
             response_model=MeshyModelResult,
             status_extractor=lambda r: r.status,
             progress_extractor=lambda r: r.progress,
         )
-        model_file = f"meshy_model_{response.result}.glb"
-        await download_url_to_bytesio(result.model_urls.glb, os.path.join(get_output_directory(), model_file))
-        return IO.NodeOutput(model_file, response.result)
+        return IO.NodeOutput(
+            f"{task_id}.glb",
+            task_id,
+            await download_url_to_file_3d(result.model_urls.glb, "glb", task_id=task_id),
+            await download_url_to_file_3d(result.model_urls.fbx, "fbx", task_id=task_id),
+        )
 
 
 class MeshyRigModelNode(IO.ComfyNode):
@@ -550,7 +575,7 @@ class MeshyRigModelNode(IO.ComfyNode):
         return IO.Schema(
             node_id="MeshyRigModelNode",
             display_name="Meshy: Rig Model",
-            category="api node/3d/Meshy",
+            category="3d/partner/Meshy",
             description="Provides a rigged character in standard formats. "
             "Auto-rigging is currently not suitable for untextured meshes, non-humanoid assets, "
             "or humanoid assets with unclear limb and body structure.",
@@ -571,8 +596,10 @@ class MeshyRigModelNode(IO.ComfyNode):
                 ),
             ],
             outputs=[
-                IO.String.Output(display_name="model_file"),
+                IO.String.Output(display_name="model_file"),  # for backward compatibility only
                 IO.Custom("MESHY_RIGGED_TASK_ID").Output(display_name="rig_task_id"),
+                IO.File3DGLB.Output(display_name="GLB"),
+                IO.File3DFBX.Output(display_name="FBX"),
             ],
             hidden=[
                 IO.Hidden.auth_token_comfy_org,
@@ -606,18 +633,20 @@ class MeshyRigModelNode(IO.ComfyNode):
                 texture_image_url=texture_image_url,
             ),
         )
+        task_id = response.result
         result = await poll_op(
             cls,
-            ApiEndpoint(path=f"/proxy/meshy/openapi/v1/rigging/{response.result}"),
+            ApiEndpoint(path=f"/proxy/meshy/openapi/v1/rigging/{task_id}"),
             response_model=MeshyRiggedResult,
             status_extractor=lambda r: r.status,
             progress_extractor=lambda r: r.progress,
         )
-        model_file = f"meshy_model_{response.result}.glb"
-        await download_url_to_bytesio(
-            result.result.rigged_character_glb_url, os.path.join(get_output_directory(), model_file)
+        return IO.NodeOutput(
+            f"{task_id}.glb",
+            task_id,
+            await download_url_to_file_3d(result.result.rigged_character_glb_url, "glb", task_id=task_id),
+            await download_url_to_file_3d(result.result.rigged_character_fbx_url, "fbx", task_id=task_id),
         )
-        return IO.NodeOutput(model_file, response.result)
 
 
 class MeshyAnimateModelNode(IO.ComfyNode):
@@ -627,7 +656,7 @@ class MeshyAnimateModelNode(IO.ComfyNode):
         return IO.Schema(
             node_id="MeshyAnimateModelNode",
             display_name="Meshy: Animate Model",
-            category="api node/3d/Meshy",
+            category="3d/partner/Meshy",
             description="Apply a specific animation action to a previously rigged character.",
             inputs=[
                 IO.Custom("MESHY_RIGGED_TASK_ID").Input("rig_task_id"),
@@ -640,7 +669,9 @@ class MeshyAnimateModelNode(IO.ComfyNode):
                 ),
             ],
             outputs=[
-                IO.String.Output(display_name="model_file"),
+                IO.String.Output(display_name="model_file"),  # for backward compatibility only
+                IO.File3DGLB.Output(display_name="GLB"),
+                IO.File3DFBX.Output(display_name="FBX"),
             ],
             hidden=[
                 IO.Hidden.auth_token_comfy_org,
@@ -669,16 +700,19 @@ class MeshyAnimateModelNode(IO.ComfyNode):
                 action_id=action_id,
             ),
         )
+        task_id = response.result
         result = await poll_op(
             cls,
-            ApiEndpoint(path=f"/proxy/meshy/openapi/v1/animations/{response.result}"),
+            ApiEndpoint(path=f"/proxy/meshy/openapi/v1/animations/{task_id}"),
             response_model=MeshyAnimationResult,
             status_extractor=lambda r: r.status,
             progress_extractor=lambda r: r.progress,
         )
-        model_file = f"meshy_model_{response.result}.glb"
-        await download_url_to_bytesio(result.result.animation_glb_url, os.path.join(get_output_directory(), model_file))
-        return IO.NodeOutput(model_file, response.result)
+        return IO.NodeOutput(
+            f"{task_id}.glb",
+            await download_url_to_file_3d(result.result.animation_glb_url, "glb", task_id=task_id),
+            await download_url_to_file_3d(result.result.animation_fbx_url, "fbx", task_id=task_id),
+        )
 
 
 class MeshyTextureNode(IO.ComfyNode):
@@ -688,7 +722,7 @@ class MeshyTextureNode(IO.ComfyNode):
         return IO.Schema(
             node_id="MeshyTextureNode",
             display_name="Meshy: Texture Model",
-            category="api node/3d/Meshy",
+            category="3d/partner/Meshy",
             inputs=[
                 IO.Combo.Input("model", options=["latest"]),
                 IO.Custom("MESHY_TASK_ID").Input("meshy_task_id"),
@@ -698,8 +732,9 @@ class MeshyTextureNode(IO.ComfyNode):
                     tooltip="Use the original UV of the model instead of generating new UVs. "
                     "When enabled, Meshy preserves existing textures from the uploaded model. "
                     "If the model has no original UV, the quality of the output might not be as good.",
+                    advanced=True,
                 ),
-                IO.Boolean.Input("pbr", default=False),
+                IO.Boolean.Input("pbr", default=False, advanced=True),
                 IO.String.Input(
                     "text_style_prompt",
                     default="",
@@ -715,8 +750,10 @@ class MeshyTextureNode(IO.ComfyNode):
                 ),
             ],
             outputs=[
-                IO.String.Output(display_name="model_file"),
+                IO.String.Output(display_name="model_file"),  # for backward compatibility only
                 IO.Custom("MODEL_TASK_ID").Output(display_name="meshy_task_id"),
+                IO.File3DGLB.Output(display_name="GLB"),
+                IO.File3DFBX.Output(display_name="FBX"),
             ],
             hidden=[
                 IO.Hidden.auth_token_comfy_org,
@@ -760,16 +797,20 @@ class MeshyTextureNode(IO.ComfyNode):
                 image_style_url=image_style_url,
             ),
         )
+        task_id = response.result
         result = await poll_op(
             cls,
-            ApiEndpoint(path=f"/proxy/meshy/openapi/v1/retexture/{response.result}"),
+            ApiEndpoint(path=f"/proxy/meshy/openapi/v1/retexture/{task_id}"),
             response_model=MeshyModelResult,
             status_extractor=lambda r: r.status,
             progress_extractor=lambda r: r.progress,
         )
-        model_file = f"meshy_model_{response.result}.glb"
-        await download_url_to_bytesio(result.model_urls.glb, os.path.join(get_output_directory(), model_file))
-        return IO.NodeOutput(model_file, response.result)
+        return IO.NodeOutput(
+            f"{task_id}.glb",
+            task_id,
+            await download_url_to_file_3d(result.model_urls.glb, "glb", task_id=task_id),
+            await download_url_to_file_3d(result.model_urls.fbx, "fbx", task_id=task_id),
+        )
 
 
 class MeshyExtension(ComfyExtension):

@@ -11,7 +11,7 @@ extra_model_paths.yaml
 /.vs
 .vscode/
 .idea/
-venv/
+venv*/
 .venv/
 /web/extensions/*
 !/web/extensions/logging.js.example
@@ -44,3 +44,6 @@ config/replicate_config.yml
 *.pth
 backup_custom_nodes/
 test*.*
+filtered-openapi.yaml
+uv.lock
+.comfy_environment

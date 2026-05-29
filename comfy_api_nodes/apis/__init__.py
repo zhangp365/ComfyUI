@@ -3,7 +3,6 @@
 #   timestamp: 2025-07-30T08:54:00+00:00
 
 # pylint: disable
-from __future__ import annotations
 
 from datetime import date, datetime
 from enum import Enum
@@ -1197,12 +1196,6 @@ class KlingImageGenImageReferenceType(str, Enum):
     face = 'face'
 
 
-class KlingImageGenModelName(str, Enum):
-    kling_v1 = 'kling-v1'
-    kling_v1_5 = 'kling-v1-5'
-    kling_v2 = 'kling-v2'
-
-
 class KlingImageGenerationsRequest(BaseModel):
     aspect_ratio: Optional[KlingImageGenAspectRatio] = '16:9'
     callback_url: Optional[AnyUrl] = Field(
@@ -1218,7 +1211,7 @@ class KlingImageGenerationsRequest(BaseModel):
         0.5, description='Reference intensity for user-uploaded images', ge=0.0, le=1.0
     )
     image_reference: Optional[KlingImageGenImageReferenceType] = None
-    model_name: Optional[KlingImageGenModelName] = 'kling-v1'
+    model_name: str = Field(...)
     n: Optional[int] = Field(1, description='Number of generated images', ge=1, le=9)
     negative_prompt: Optional[str] = Field(
         None, description='Negative text prompt', max_length=200

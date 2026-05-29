@@ -62,7 +62,7 @@ class StabilityStableImageUltraNode(IO.ComfyNode):
         return IO.Schema(
             node_id="StabilityStableImageUltraNode",
             display_name="Stability AI Stable Image Ultra",
-            category="api node/image/Stability AI",
+            category="image/partner/Stability AI",
             description=cleandoc(cls.__doc__ or ""),
             inputs=[
                 IO.String.Input(
@@ -86,6 +86,7 @@ class StabilityStableImageUltraNode(IO.ComfyNode):
                     "style_preset",
                     options=get_stability_style_presets(),
                     tooltip="Optional desired style of generated image.",
+                    advanced=True,
                 ),
                 IO.Int.Input(
                     "seed",
@@ -107,6 +108,7 @@ class StabilityStableImageUltraNode(IO.ComfyNode):
                     tooltip="A blurb of text describing what you do not wish to see in the output image. This is an advanced feature.",
                     force_input=True,
                     optional=True,
+                    advanced=True,
                 ),
                 IO.Float.Input(
                     "image_denoise",
@@ -195,7 +197,7 @@ class StabilityStableImageSD_3_5Node(IO.ComfyNode):
         return IO.Schema(
             node_id="StabilityStableImageSD_3_5Node",
             display_name="Stability AI Stable Diffusion 3.5 Image",
-            category="api node/image/Stability AI",
+            category="image/partner/Stability AI",
             description=cleandoc(cls.__doc__ or ""),
             inputs=[
                 IO.String.Input(
@@ -218,6 +220,7 @@ class StabilityStableImageSD_3_5Node(IO.ComfyNode):
                     "style_preset",
                     options=get_stability_style_presets(),
                     tooltip="Optional desired style of generated image.",
+                    advanced=True,
                 ),
                 IO.Float.Input(
                     "cfg_scale",
@@ -247,6 +250,7 @@ class StabilityStableImageSD_3_5Node(IO.ComfyNode):
                     tooltip="Keywords of what you do not wish to see in the output image. This is an advanced feature.",
                     force_input=True,
                     optional=True,
+                    advanced=True,
                 ),
                 IO.Float.Input(
                     "image_denoise",
@@ -350,7 +354,7 @@ class StabilityUpscaleConservativeNode(IO.ComfyNode):
         return IO.Schema(
             node_id="StabilityUpscaleConservativeNode",
             display_name="Stability AI Upscale Conservative",
-            category="api node/image/Stability AI",
+            category="image/partner/Stability AI",
             description=cleandoc(cls.__doc__ or ""),
             inputs=[
                 IO.Image.Input("image"),
@@ -384,6 +388,7 @@ class StabilityUpscaleConservativeNode(IO.ComfyNode):
                     tooltip="Keywords of what you do not wish to see in the output image. This is an advanced feature.",
                     force_input=True,
                     optional=True,
+                    advanced=True,
                 ),
             ],
             outputs=[
@@ -396,7 +401,7 @@ class StabilityUpscaleConservativeNode(IO.ComfyNode):
             ],
             is_api_node=True,
             price_badge=IO.PriceBadge(
-                expr="""{"type":"usd","usd":0.25}""",
+                expr="""{"type":"usd","usd":0.4}""",
             ),
         )
 
@@ -452,7 +457,7 @@ class StabilityUpscaleCreativeNode(IO.ComfyNode):
         return IO.Schema(
             node_id="StabilityUpscaleCreativeNode",
             display_name="Stability AI Upscale Creative",
-            category="api node/image/Stability AI",
+            category="image/partner/Stability AI",
             description=cleandoc(cls.__doc__ or ""),
             inputs=[
                 IO.Image.Input("image"),
@@ -474,6 +479,7 @@ class StabilityUpscaleCreativeNode(IO.ComfyNode):
                     "style_preset",
                     options=get_stability_style_presets(),
                     tooltip="Optional desired style of generated image.",
+                    advanced=True,
                 ),
                 IO.Int.Input(
                     "seed",
@@ -491,6 +497,7 @@ class StabilityUpscaleCreativeNode(IO.ComfyNode):
                     tooltip="Keywords of what you do not wish to see in the output image. This is an advanced feature.",
                     force_input=True,
                     optional=True,
+                    advanced=True,
                 ),
             ],
             outputs=[
@@ -503,7 +510,7 @@ class StabilityUpscaleCreativeNode(IO.ComfyNode):
             ],
             is_api_node=True,
             price_badge=IO.PriceBadge(
-                expr="""{"type":"usd","usd":0.25}""",
+                expr="""{"type":"usd","usd":0.6}""",
             ),
         )
 
@@ -571,7 +578,7 @@ class StabilityUpscaleFastNode(IO.ComfyNode):
         return IO.Schema(
             node_id="StabilityUpscaleFastNode",
             display_name="Stability AI Upscale Fast",
-            category="api node/image/Stability AI",
+            category="image/partner/Stability AI",
             description=cleandoc(cls.__doc__ or ""),
             inputs=[
                 IO.Image.Input("image"),
@@ -586,7 +593,7 @@ class StabilityUpscaleFastNode(IO.ComfyNode):
             ],
             is_api_node=True,
             price_badge=IO.PriceBadge(
-                expr="""{"type":"usd","usd":0.01}""",
+                expr="""{"type":"usd","usd":0.02}""",
             ),
         )
 
@@ -623,7 +630,8 @@ class StabilityTextToAudio(IO.ComfyNode):
         return IO.Schema(
             node_id="StabilityTextToAudio",
             display_name="Stability AI Text To Audio",
-            category="api node/audio/Stability AI",
+            category="audio/partner/Stability AI",
+            essentials_category="Audio",
             description=cleandoc(cls.__doc__ or ""),
             inputs=[
                 IO.Combo.Input(
@@ -659,6 +667,7 @@ class StabilityTextToAudio(IO.ComfyNode):
                     step=1,
                     tooltip="Controls the number of sampling steps.",
                     optional=True,
+                    advanced=True,
                 ),
             ],
             outputs=[
@@ -699,7 +708,7 @@ class StabilityAudioToAudio(IO.ComfyNode):
         return IO.Schema(
             node_id="StabilityAudioToAudio",
             display_name="Stability AI Audio To Audio",
-            category="api node/audio/Stability AI",
+            category="audio/partner/Stability AI",
             description=cleandoc(cls.__doc__ or ""),
             inputs=[
                 IO.Combo.Input(
@@ -736,6 +745,7 @@ class StabilityAudioToAudio(IO.ComfyNode):
                     step=1,
                     tooltip="Controls the number of sampling steps.",
                     optional=True,
+                    advanced=True,
                 ),
                 IO.Float.Input(
                     "strength",
@@ -792,7 +802,7 @@ class StabilityAudioInpaint(IO.ComfyNode):
         return IO.Schema(
             node_id="StabilityAudioInpaint",
             display_name="Stability AI Audio Inpaint",
-            category="api node/audio/Stability AI",
+            category="audio/partner/Stability AI",
             description=cleandoc(cls.__doc__ or ""),
             inputs=[
                 IO.Combo.Input(
@@ -829,6 +839,7 @@ class StabilityAudioInpaint(IO.ComfyNode):
                     step=1,
                     tooltip="Controls the number of sampling steps.",
                     optional=True,
+                    advanced=True,
                 ),
                 IO.Int.Input(
                     "mask_start",
@@ -837,6 +848,7 @@ class StabilityAudioInpaint(IO.ComfyNode):
                     max=190,
                     step=1,
                     optional=True,
+                    advanced=True,
                 ),
                 IO.Int.Input(
                     "mask_end",
@@ -845,6 +857,7 @@ class StabilityAudioInpaint(IO.ComfyNode):
                     max=190,
                     step=1,
                     optional=True,
+                    advanced=True,
                 ),
             ],
             outputs=[
