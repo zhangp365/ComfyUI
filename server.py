@@ -13,6 +13,7 @@ import uuid
 import urllib
 import json
 import glob
+import copy
 import struct
 import ssl
 import socket
@@ -923,9 +924,13 @@ class PromptServer():
 
         def _get_history_response(history):
             """Build JSON response from prompt history, clearing prompt values."""
+            sanitized = {}
             for k in history:
-                history[k]["prompt"] = None
-            return web.json_response(history)
+                item = history[k]
+                item_copy = copy.deepcopy(item)
+                item_copy["prompt"] = None
+                sanitized[k] = item_copy
+            return web.json_response(sanitized)
 
         @routes.get("/history")
         async def get_history(request):
