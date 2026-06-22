@@ -485,11 +485,13 @@ class SaveLatent:
 
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": { "samples": ("LATENT", ),
-                              "filename_prefix": ("STRING", {"default": "latents/ComfyUI"})},
-                "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
-                }
-    RETURN_TYPES = ()
+        return { "required": {
+            "samples": ("LATENT",),
+            "filename_prefix": ("STRING", {"default": "latents/ComfyUI"})},
+            "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
+        }
+    RETURN_TYPES = ("LATENT",)
+    RETURN_NAMES = ("samples",)
     FUNCTION = "save"
 
     OUTPUT_NODE = True
@@ -527,7 +529,7 @@ class SaveLatent:
         output["latent_format_version_0"] = torch.tensor([])
 
         comfy.utils.save_torch_file(output, file, metadata=metadata)
-        return { "ui": { "latents": results } }
+        return { "ui": { "latents": results }, "result": (samples,) }
 
 
 class LoadLatent:
@@ -1629,15 +1631,23 @@ class SaveImage:
 
     @classmethod
     def INPUT_TYPES(s):
-        return {"required": 
-                    {"images": ("IMAGE", ),
-                     "filename_prefix": ("STRING", {"default": "ComfyUI"})},
-                "hidden": {"prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"},
-                "optional": {"filename_suffix": (["jpg","png"], {"default": "jpg"}),
-                             "grayscale": ("BOOLEAN", {"default": False, "label_on": "enabled", "label_off": "disabled"}),}
-                }
+        return {
+            "required": {
+                "images": ("IMAGE", {"tooltip": "The images to save."}),
+                "filename_prefix": ("STRING", {
+                    "default": "ComfyUI",
+                    "tooltip": "The prefix for the file to save. This may include formatting information such as %date:yyyy-MM-dd% or %Empty Latent Image.width% to include values from nodes."
+                })
+            },
+            "hidden": {
+                "prompt": "PROMPT", "extra_pnginfo": "EXTRA_PNGINFO"
+            },
+            "optional": {"filename_suffix": (["jpg","png"], {"default": "jpg"}),
+                         "grayscale": ("BOOLEAN", {"default": False, "label_on": "enabled", "label_off": "disabled"}),}
+        }
 
-    RETURN_TYPES = ()
+    RETURN_TYPES = ("IMAGE",)
+    RETURN_NAMES = ("images",)
     FUNCTION = "save_images"
 
     OUTPUT_NODE = True
@@ -1687,7 +1697,7 @@ class SaveImage:
             })
             counter += 1
         logger.debug("save_images end:")
-        return { "ui": { "images": results } }
+        return { "ui": { "images": results }, "result" : (images,) }
 
 class PreviewImage(SaveImage):
     def __init__(self):
