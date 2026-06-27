@@ -35,5 +35,5 @@ opencv-python
 spandrel
 pydantic~=2.0
 pydantic-settings~=2.0
-PyOpenGL
-glfw
+PyOpenGL>=3.1.8
+comfy-angle
