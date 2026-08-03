@@ -125,7 +125,8 @@ class PhotoMakerLoader(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="PhotoMakerLoader",
-            category="experimental/photomaker",
+            display_name="Load PhotoMaker Model",
+            category="model/loaders",
             inputs=[
                 io.Combo.Input("photomaker_model_name", options=folder_paths.get_filename_list("photomaker")),
             ],
@@ -151,7 +152,8 @@ class PhotoMakerEncode(io.ComfyNode):
     def define_schema(cls):
         return io.Schema(
             node_id="PhotoMakerEncode",
-            category="experimental/photomaker",
+            display_name="PhotoMaker Encode",
+            category="model/conditioning/photomaker",
             inputs=[
                 io.Photomaker.Input("photomaker"),
                 io.Image.Input("image"),
