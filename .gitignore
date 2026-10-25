@@ -50,3 +50,4 @@ uv.lock
 
 config/ark_config.yml
 config/civitai_config.yml
+/previews/

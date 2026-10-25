@@ -195,7 +195,7 @@ class LoadImageDataSetFromFolderNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, folder):
-        sub_input_dir = os.path.join(folder_paths.get_input_directory(), folder)
+        sub_input_dir = secure_subfolder_path(folder_paths.get_input_directory(), folder)
         valid_extensions = [".png", ".jpg", ".jpeg", ".webp"]
         image_files = [
             f
@@ -241,7 +241,7 @@ class LoadImageTextDataSetFromFolderNode(io.ComfyNode):
     def execute(cls, folder):
         logging.info(f"Loading images from folder: {folder}")
 
-        sub_input_dir = os.path.join(folder_paths.get_input_directory(), folder)
+        sub_input_dir = secure_subfolder_path(folder_paths.get_input_directory(), folder)
         valid_extensions = [".png", ".jpg", ".jpeg", ".webp"]
 
         image_files = []
@@ -310,7 +310,7 @@ class LoadVideoDataSetFromFolderNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, folder):
-        sub_input_dir = os.path.join(folder_paths.get_input_directory(), folder)
+        sub_input_dir = secure_subfolder_path(folder_paths.get_input_directory(), folder)
         video_files = sorted([
             f for f in os.listdir(sub_input_dir)
             if any(f.lower().endswith(ext) for ext in VALID_VIDEO_EXTENSIONS)
@@ -357,7 +357,7 @@ class LoadVideoTextDataSetFromFolderNode(io.ComfyNode):
 
     @classmethod
     def execute(cls, folder):
-        sub_input_dir = os.path.join(folder_paths.get_input_directory(), folder)
+        sub_input_dir = secure_subfolder_path(folder_paths.get_input_directory(), folder)
 
         video_files = []
         for item in sorted(os.listdir(sub_input_dir)):
@@ -692,6 +692,7 @@ class ImageProcessingNode(io.ComfyNode):
             category=cls.category,
             description=cls.description,
             is_experimental=True,
+            is_deprecated=cls.is_deprecated,
             is_input_list=is_group,  # True for group, False for individual
             inputs=inputs,
             outputs=[
@@ -861,9 +862,12 @@ class TextProcessingNode(io.ComfyNode):
 
         return io.Schema(
             node_id=cls.node_id,
+            search_aliases=cls.search_aliases,
             display_name=cls.display_name or cls.node_id,
             category="text",
+            description=cls.description,
             is_experimental=True,
+            is_deprecated=cls.is_deprecated,
             is_input_list=is_group,  # True for group, False for individual
             inputs=inputs,
             outputs=[
@@ -1063,7 +1067,6 @@ class NormalizeImagesNode(ImageProcessingNode):
             min=0.0,
             max=1.0,
             tooltip="Mean value for normalization.",
-            advanced=True,
         ),
         io.Float.Input(
             "std",
@@ -1071,13 +1074,15 @@ class NormalizeImagesNode(ImageProcessingNode):
             min=0.001,
             max=1.0,
             tooltip="Standard deviation for normalization.",
-            advanced=True,
         ),
     ]
 
     @classmethod
     def _process(cls, image, mean, std):
-        return (image - mean) / std
+        out = (image - mean) / std
+        if image.shape[-1] == 4:  # alpha stores transparency, not color
+            out[..., 3] = image[..., 3]
+        return out
 
 
 class AdjustBrightnessNode(ImageProcessingNode):
@@ -1099,7 +1104,10 @@ class AdjustBrightnessNode(ImageProcessingNode):
 
     @classmethod
     def _process(cls, image, factor):
-        return (image * factor).clamp(0.0, 1.0)
+        out = (image * factor).clamp(0.0, 1.0)
+        if image.shape[-1] == 4:  # alpha stores transparency, not color
+            out[..., 3] = image[..., 3]
+        return out
 
 
 class AdjustContrastNode(ImageProcessingNode):
@@ -1121,7 +1129,10 @@ class AdjustContrastNode(ImageProcessingNode):
 
     @classmethod
     def _process(cls, image, factor):
-        return ((image - 0.5) * factor + 0.5).clamp(0.0, 1.0)
+        out = ((image - 0.5) * factor + 0.5).clamp(0.0, 1.0)
+        if image.shape[-1] == 4:  # alpha stores transparency, not color
+            out[..., 3] = image[..., 3]
+        return out
 
 
 class ShuffleDatasetNode(ImageProcessingNode):
@@ -1405,7 +1416,7 @@ class ShuffleVideoTextDatasetNode(io.ComfyNode):
             node_id="ShuffleVideoTextDataset",
             search_aliases=["shuffle", "randomize", "mix"],
             display_name="Shuffle Pairs of Video-Text",
-            category="dataset/video",
+            category="video/batch",
             description="Randomly shuffle the order of pairs of video-text in a list.",
             is_experimental=True,
             is_input_list=True,
