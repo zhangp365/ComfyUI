@@ -67,6 +67,7 @@ from app.user_manager import UserManager
 from app.model_manager import ModelFileManager
 from app.custom_node_manager import CustomNodeManager
 from app.subgraph_manager import SubgraphManager
+from app.quick_edit_workflow import QuickEditWorkflow
 from app.node_replace_manager import NodeReplaceManager
 from typing import TYPE_CHECKING, Optional, Union
 from api_server.routes.internal.internal_routes import InternalRoutes
@@ -355,6 +356,8 @@ class PromptServer():
         self.workflow_metadata = {}
 
         self.on_prompt_handlers = []
+        if workflow_directory := os.environ.get("QUICK_EDIT_WORKFLOW_DIR"):
+            self.add_on_prompt_handler(QuickEditWorkflow(workflow_directory, folder_paths.get_input_directory(), os.environ.get("QUICK_EDIT_SIZE", "2k")))
 
         @routes.get('/ws')
         async def websocket_handler(request):

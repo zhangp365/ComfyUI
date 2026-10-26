@@ -298,6 +298,7 @@ if args.enable_dynamic_vram or (enables_dynamic_vram() and dynamic_vram_supporte
             aimdo_initialized = comfy_aimdo.control.init_devices(d.index for d in comfy.model_management.get_all_torch_devices())
 
         if aimdo_initialized:
+            console_log_level = logging.getLevelName(logging.getLogger().getEffectiveLevel())
             if console_log_level == 'DEBUG':
                 comfy_aimdo.control.set_log_debug()
             elif console_log_level == 'DETAIL':
